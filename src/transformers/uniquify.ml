@@ -1,6 +1,5 @@
 open Ast
 open Ast.Standard
-open Mapping
 
 exception Illegal_variable_reference of string
 exception Invalid_program

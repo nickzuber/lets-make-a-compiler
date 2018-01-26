@@ -11,13 +11,14 @@ let rec string_of_program ?(padding=0) node : string =
     let str = string_of_expression expr ~padding:(padding + padding_offset) in
     Printf.sprintf "%sProgram\n%s" (build_offset padding) str
   | FlatProgram (vars, stmts) ->
-    Printf.sprintf "%sFlatProgram\n%s" (build_offset padding) "TODO"
+    let str = string_of_statements stmts ~padding:(padding + padding_offset) in
+    Printf.sprintf "%sFlatProgram\n%s" (build_offset padding) str
 
 and string_of_expression ?(padding=0) node : string = Ast.Standard.(
   match node with
   | Read -> Printf.sprintf "%sRead" (build_offset padding)
   | Int n -> Printf.sprintf "%sInt: %d" (build_offset padding) n
-  | Variable v -> Printf.sprintf "%sVariable: %s" (build_offset padding) v
+  | Variable name -> Printf.sprintf "%sVariable: %s" (build_offset padding) name
   | BinaryExpression (op, lhs, rhs) ->
     Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
       (build_offset padding)
@@ -43,6 +44,41 @@ and string_of_binop ?(padding=0) node : string = Ast.Standard.(
 and string_of_unop ?(padding=0) node : string = Ast.Standard.(
   match node with
   | Minus -> Printf.sprintf "%sMinus" (build_offset padding))
+
+and string_of_statements ?(padding=0) stmts : string = Ast.Flat.(
+  let start = (build_offset padding) ^ "Statements:" in
+  let statements = List.fold_left (fun acc stmt ->
+    let str = string_of_statement stmt ~padding:(padding + padding_offset) in
+    acc ^ "\n" ^ str) "" stmts in
+  start ^ statements
+)
+
+and string_of_statement ?(padding=0) node : string = Ast.Flat.(
+  match node with
+  | Return arg ->
+    Printf.sprintf "%sreturn %s"
+      (build_offset padding)
+      (string_of_argument arg)
+  | Assignment (name, expr) ->
+    Printf.sprintf "%s%s := %s"
+      (build_offset padding)
+      (name)
+      (string_of_flat_expression expr)
+)
+
+and string_of_argument ?(padding=0) node : string = Ast.Flat.(
+  match node with
+  | Int n -> Printf.sprintf "%d" n
+  | Variable name -> Printf.sprintf "%s" name
+)
+
+and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
+  match node with
+    | Read -> "Read"
+    | Argument arg -> string_of_argument arg
+    | UnaryExpression (op, arg) -> ""
+    | BinaryExpression (op, lhs, rhs) -> ""
+)
 
 let display_input (prog : program) : unit =
   print_endline "\n──< \x1b[1mInput\x1b[0m >─────────────────────────────────────────\n";

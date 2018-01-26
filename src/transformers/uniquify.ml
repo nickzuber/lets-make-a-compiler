@@ -1,7 +1,16 @@
 open Ast
+open Ast.Standard
 open Mapping
 
 exception Illegal_variable_reference of string
+exception Invalid_program
+
+(* Return the amount of times we've seen a variable so far. Since the variables
+ * are stored in the hashtable, a failed lookup means we've seen it zero times so
+ * we return that as the count. *)
+let get_count tbl key =
+  try Hashtbl.find tbl key
+  with _ -> 0
 
 (* Actually does the unnique naming transformation on a given program. This is done by
  * passing around a mapping of all the variable names we've seen so far, and either:
@@ -9,28 +18,29 @@ exception Illegal_variable_reference of string
  *  - adjusts the name of the variable if it's been seen before
  * We use the `count` variable to append a unique number on each variable name
  * we decide that we want to change. *)
-let rec uniquify (expr : expression) (env : env) (count : int) : expression =
+let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expression =
   match expr with
   | Variable name ->
-    let name' = Printf.sprintf "%s_%d" name count in
-    if exists_in_env env name' then
-      Variable name'
-    else
-      raise (Illegal_variable_reference name)
+      let count = get_count env name in
+      if count > 0 then
+        let name' = Printf.sprintf "%s_%d" name count in
+        Variable name'
+      else
+        raise (Illegal_variable_reference name)
   | LetExpression (name, binding, body) ->
-    let count' = count + 1 in
-    let name' = Printf.sprintf "%s_%d" name count' in
-    let mapping = (name', binding) in
-    let env' = extend_env env mapping in
-    let binding' = uniquify binding env' count' in
-    let body' = uniquify body env' count' in
+    let count = (get_count env name) + 1 in
+    let env' = Hashtbl.copy env in
+    Hashtbl.add env' name count;
+    let binding' = uniquify binding env' in
+    let body' = uniquify body env' in
+    let name' = Printf.sprintf "%s_%d" name count in
     LetExpression (name', binding', body')
   | BinaryExpression (op, lhs, rhs) ->
-    let lhs' = uniquify lhs env count in
-    let rhs' = uniquify rhs env count in
+    let lhs' = uniquify lhs env in
+    let rhs' = uniquify rhs env in
     BinaryExpression (op, lhs', rhs')
   | UnaryExpression (op, operand) ->
-    let operand' = uniquify operand env count in
+    let operand' = uniquify operand env in
     UnaryExpression (op, operand')
   | Int n -> Int n
   | Read -> Read
@@ -41,8 +51,8 @@ let rec uniquify (expr : expression) (env : env) (count : int) : expression =
  * The approach here is to extract the program body and uniquify that expression, since
  * the recursive algorithm operates on expressions anyways. *)
 let transform (prog : program) : program =
-  let env = [] in
-  let count = 0 in
+  let env = Hashtbl.create 20 in
   let uniquified_body = match prog with
-    | Program expr -> uniquify expr env count in
+    | Program expr -> uniquify expr env
+    | _ -> raise Invalid_program in
   Program uniquified_body

@@ -1,17 +1,19 @@
 OCB_FLAGS = -use-ocamlfind -pkg core,batteries -tags thread
 OCB =       ocamlbuild $(OCB_FLAGS)
 
-MODULES = src
+MODULES = src \
+					src/transformers \
+					src/utils
 
 INCLUDE_MODULES = $(foreach dir, $(MODULES), -I $(dir))
 
 all: build try
 
 try:
-	./compiler.native
+	./main.native
 
 build:
-	$(OCB) $(INCLUDE_MODULES) src/compiler.native
+	$(OCB) $(INCLUDE_MODULES) src/main.native
 
 clean:
 	$(OCB) -clean

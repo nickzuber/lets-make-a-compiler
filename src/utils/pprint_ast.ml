@@ -8,11 +8,15 @@ let build_offset padding : string =
 let rec string_of_program ?(padding=0) node : string =
   match node with
   | Program expr ->
-    let str = string_of_expression expr ~padding:(padding + padding_offset) in
-    Printf.sprintf "%sProgram\n%s" (build_offset padding) str
+      let str = string_of_expression expr ~padding:(padding + padding_offset) in
+      Printf.sprintf "%sProgram\n%s" (build_offset padding) str
   | FlatProgram (vars, stmts, arg) ->
-    let str = string_of_statements stmts ~padding:(padding + padding_offset) in
-    Printf.sprintf "%sFlatProgram\n%s" (build_offset padding) str
+      let vars_string = string_of_variables vars ~padding:(padding + padding_offset) in
+      let stmts_string = string_of_statements stmts ~padding:(padding + padding_offset) in
+      Printf.sprintf "%sFlatProgram\n%s\n%s"
+        (build_offset padding)
+        vars_string
+        stmts_string
 
 and string_of_expression ?(padding=0) node : string = Ast.Standard.(
   match node with
@@ -20,22 +24,22 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
   | Int n -> Printf.sprintf "%sInt: %d" (build_offset padding) n
   | Variable name -> Printf.sprintf "%sVariable: %s" (build_offset padding) name
   | BinaryExpression (op, lhs, rhs) ->
-    Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
-      (build_offset padding)
-      (string_of_binop op ~padding:(padding + padding_offset))
-      (string_of_expression lhs ~padding:(padding + padding_offset))
-      (string_of_expression rhs ~padding:(padding + padding_offset))
+      Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
+        (build_offset padding)
+        (string_of_binop op ~padding:(padding + padding_offset))
+        (string_of_expression lhs ~padding:(padding + padding_offset))
+        (string_of_expression rhs ~padding:(padding + padding_offset))
   | UnaryExpression (op, operand) ->
-    Printf.sprintf "%sUnaryExpression\n%s\n%s"
-      (build_offset padding)
-      (string_of_unop op ~padding:(padding + padding_offset))
-      (string_of_expression operand ~padding:(padding + padding_offset))
+      Printf.sprintf "%sUnaryExpression\n%s\n%s"
+        (build_offset padding)
+        (string_of_unop op ~padding:(padding + padding_offset))
+        (string_of_expression operand ~padding:(padding + padding_offset))
   | LetExpression (v, binding, expr) ->
-    Printf.sprintf "%sLetExpression\n%s\n%s\n%s"
-      (build_offset padding)
-      (build_offset (padding + padding_offset) ^ v)
-      (string_of_expression binding ~padding:(padding + padding_offset))
-      (string_of_expression expr ~padding:(padding + padding_offset)))
+      Printf.sprintf "%sLetExpression\n%s\n%s\n%s"
+        (build_offset padding)
+        (build_offset (padding + padding_offset) ^ v)
+        (string_of_expression binding ~padding:(padding + padding_offset))
+        (string_of_expression expr ~padding:(padding + padding_offset)))
 
 and string_of_binop ?(padding=0) node : string = Ast.Standard.(
   match node with
@@ -53,13 +57,21 @@ and string_of_statements ?(padding=0) stmts : string = Ast.Flat.(
   start ^ statements
 )
 
+and string_of_variables ?(padding=0) vars : string = Ast.Flat.(
+  let start = (build_offset padding) ^ "Variables:" in
+  let variables = List.fold_left (fun acc var ->
+    let str = build_offset(padding + padding_offset) ^ var in
+    acc ^ "\n" ^ str) "" vars in
+  start ^ variables
+)
+
 and string_of_statement ?(padding=0) node : string = Ast.Flat.(
   match node with
   | Assignment (name, expr) ->
-    Printf.sprintf "%s%s := %s"
-      (build_offset padding)
-      (name)
-      (string_of_flat_expression expr)
+      Printf.sprintf "%s%s := %s"
+        (build_offset padding)
+        (name)
+        (string_of_flat_expression expr)
 )
 
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(
@@ -73,14 +85,14 @@ and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
     | Read -> "Read"
     | Argument arg -> string_of_argument arg
     | UnaryExpression (op, arg) ->
-      Printf.sprintf "%s%s"
-        (string_of_flat_unop op)
-        (string_of_argument arg)
+        Printf.sprintf "%s%s"
+          (string_of_flat_unop op)
+          (string_of_argument arg)
     | BinaryExpression (op, lhs, rhs) ->
-      Printf.sprintf "%s %s %s"
-        (string_of_argument lhs)
-        (string_of_flat_binop op)
-        (string_of_argument rhs)
+        Printf.sprintf "%s %s %s"
+          (string_of_argument lhs)
+          (string_of_flat_binop op)
+          (string_of_argument rhs)
 )
 
 and string_of_flat_binop ?(padding=0) node : string = Ast.Flat.(

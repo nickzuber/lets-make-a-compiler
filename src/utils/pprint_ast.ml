@@ -104,12 +104,12 @@ and string_of_flat_unop ?(padding=0) node : string = Ast.Flat.(
   | Minus -> Printf.sprintf "%s-" (build_offset padding))
 
 let display_input (prog : program) : program =
-  print_endline "\n──< \x1b[1mInput\x1b[0m >─────────────────────────────────────────\n";
+  print_endline "\n──< \x1b[1mInput\x1b[0m >────────────────────\n";
   print_endline (string_of_program prog ~padding:1);
   prog
 
 let display_output (title : string) (prog : program) : program =
-  print_endline ("\n──< \x1b[1m" ^ title ^ "\x1b[0m >────────────────────────────────────────\n");
+  print_endline ("\n──< \x1b[1m" ^ title ^ "\x1b[0m >────────────────────\n");
   print_endline (string_of_program prog ~padding:1);
   prog
 

@@ -1,4 +1,4 @@
-OCB_FLAGS = -use-ocamlfind -pkg core,batteries -tags thread
+OCB_FLAGS = -use-ocamlfind -pkg core,batteries,ounit -tags thread
 OCB =       ocamlbuild $(OCB_FLAGS)
 
 MODULES = src \
@@ -8,6 +8,7 @@ MODULES = src \
 INCLUDE_MODULES = $(foreach dir, $(MODULES), -I $(dir))
 
 all: build try
+test: build-test run-test
 
 try:
 	./main.native
@@ -15,7 +16,13 @@ try:
 build:
 	$(OCB) $(INCLUDE_MODULES) src/main.native
 
+run-test:
+	./test_main.native
+
+build-test:
+	$(OCB) $(INCLUDE_MODULES) tests/test_main.native
+
 clean:
 	$(OCB) -clean
 
-.PHONY: all run build version test generate-tests try try-save try-pretty view clean
+.PHONY: all run build build-test test try clean

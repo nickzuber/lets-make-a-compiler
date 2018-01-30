@@ -27,10 +27,10 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
       else
         raise (Illegal_variable_reference name)
   | LetExpression (name, binding, body) ->
+      let binding' = uniquify binding env in
       let count = (get_count env name) + 1 in
       let env' = Hashtbl.copy env in
       Hashtbl.add env' name count;
-      let binding' = uniquify binding env' in
       let body' = uniquify body env' in
       let name' = Printf.sprintf "%s_%d" name count in
       LetExpression (name', binding', body')

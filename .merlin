@@ -1,5 +1,6 @@
 S src/**
+S test/**
 
 B _build/**
 
-PKG core batteries
+PKG core batteries ounit

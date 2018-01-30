@@ -1,6 +1,6 @@
 
 # OPAM packages needed to build tests
-export OPAM_PACKAGES='ocamlfind core batteries'
+export OPAM_PACKAGES='ocamlfind core batteries ounit'
 
 ## basic OCaml and opam installation
 full_apt_version () {
@@ -153,5 +153,4 @@ opam install -q -y ${OPAM_PACKAGES}
 # make infrared and run tests
 make
 make version
-# Tests currently produce different output on Travis so they always fail right now
-# make test
+make test

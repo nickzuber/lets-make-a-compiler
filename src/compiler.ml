@@ -4,10 +4,11 @@ open Pprint_ast
 (* The core compiling routine *)
 let compile (prog : program) =
   print_endline "\n\x1b[90mCompiling program...\x1b[39m";
-  let prog' = Uniquify.transform prog in
-  display_output "Uniquify" prog';
-  let prog' = Flatten.transform prog' in
-  display_output "Flatten" prog';
+  let _ = prog
+    |> Uniquify.transform
+    |> display_output "Uniquify"
+    |> Flatten.transform
+    |> display_output "Flatten" in
   ()
 
 (* Run the executable x86-64 binary *)

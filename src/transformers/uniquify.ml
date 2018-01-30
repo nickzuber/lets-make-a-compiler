@@ -2,7 +2,7 @@ open Ast
 open Ast.Standard
 
 exception Illegal_variable_reference of string
-exception Invalid_program
+exception Incorrect_step
 
 (* Return the amount of times we've seen a variable so far. Since the variables
  * are stored in the hashtable, a failed lookup means we've seen it zero times so
@@ -53,5 +53,5 @@ let transform (prog : program) : program =
   let env = Hashtbl.create 20 in
   let uniquified_body = match prog with
     | Program expr -> uniquify expr env
-    | _ -> raise Invalid_program in
+    | _ -> raise Incorrect_step in
   Program uniquified_body

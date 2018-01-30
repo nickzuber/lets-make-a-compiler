@@ -84,9 +84,10 @@ let display_input (prog : program) : unit =
   print_endline "\n──< \x1b[1mInput\x1b[0m >─────────────────────────────────────────\n";
   print_endline (string_of_program prog ~padding:1)
 
-let display_output (title : string) (prog : program) : unit =
+let display_output (title : string) (prog : program) : program =
   print_endline ("\n──< \x1b[1m" ^ title ^ "\x1b[0m >────────────────────────────────────────\n");
-  print_endline (string_of_program prog ~padding:1)
+  print_endline (string_of_program prog ~padding:1);
+  prog
 
 let display_error title msg : string =
   Printf.sprintf "\n\x1b[31m✗\x1b[39m \x1b[4m%s\x1b[0m\n\

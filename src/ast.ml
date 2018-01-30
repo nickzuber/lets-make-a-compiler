@@ -27,9 +27,8 @@ module rec Flat : sig
     | BinaryExpression of binops * argument * argument
   type statement =
     | Assignment of string * expression
-    | Return of argument
 end = Flat
 
 type program =
   | Program of Standard.expression
-  | FlatProgram of string list * Flat.statement list
+  | FlatProgram of string list * Flat.statement list * Flat.argument

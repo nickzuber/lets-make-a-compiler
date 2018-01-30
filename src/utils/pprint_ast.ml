@@ -10,7 +10,7 @@ let rec string_of_program ?(padding=0) node : string =
   | Program expr ->
     let str = string_of_expression expr ~padding:(padding + padding_offset) in
     Printf.sprintf "%sProgram\n%s" (build_offset padding) str
-  | FlatProgram (vars, stmts) ->
+  | FlatProgram (vars, stmts, arg) ->
     let str = string_of_statements stmts ~padding:(padding + padding_offset) in
     Printf.sprintf "%sFlatProgram\n%s" (build_offset padding) str
 
@@ -55,10 +55,6 @@ and string_of_statements ?(padding=0) stmts : string = Ast.Flat.(
 
 and string_of_statement ?(padding=0) node : string = Ast.Flat.(
   match node with
-  | Return arg ->
-    Printf.sprintf "%sreturn %s"
-      (build_offset padding)
-      (string_of_argument arg)
   | Assignment (name, expr) ->
     Printf.sprintf "%s%s := %s"
       (build_offset padding)
@@ -76,13 +72,29 @@ and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
   match node with
     | Read -> "Read"
     | Argument arg -> string_of_argument arg
-    | UnaryExpression (op, arg) -> ""
-    | BinaryExpression (op, lhs, rhs) -> ""
+    | UnaryExpression (op, arg) ->
+      Printf.sprintf "%s%s"
+        (string_of_flat_unop op)
+        (string_of_argument arg)
+    | BinaryExpression (op, lhs, rhs) ->
+      Printf.sprintf "%s %s %s"
+        (string_of_argument lhs)
+        (string_of_flat_binop op)
+        (string_of_argument rhs)
 )
 
-let display_input (prog : program) : unit =
+and string_of_flat_binop ?(padding=0) node : string = Ast.Flat.(
+  match node with
+  | Plus -> Printf.sprintf "%s+" (build_offset padding))
+
+and string_of_flat_unop ?(padding=0) node : string = Ast.Flat.(
+  match node with
+  | Minus -> Printf.sprintf "%s-" (build_offset padding))
+
+let display_input (prog : program) : program =
   print_endline "\n──< \x1b[1mInput\x1b[0m >─────────────────────────────────────────\n";
-  print_endline (string_of_program prog ~padding:1)
+  print_endline (string_of_program prog ~padding:1);
+  prog
 
 let display_output (title : string) (prog : program) : program =
   print_endline ("\n──< \x1b[1m" ^ title ^ "\x1b[0m >────────────────────────────────────────\n");

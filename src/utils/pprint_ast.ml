@@ -13,10 +13,14 @@ let rec string_of_program ?(padding=0) node : string =
   | FlatProgram (vars, stmts, arg) ->
       let vars_string = string_of_variables vars ~padding:(padding + padding_offset) in
       let stmts_string = string_of_statements stmts ~padding:(padding + padding_offset) in
-      Printf.sprintf "%sFlatProgram\n%s\n%s"
+      let arg_string = string_of_argument arg in
+      Printf.sprintf "%sFlatProgram\n%s\n%s\n%sArgument:\n%s%s"
         (build_offset padding)
         vars_string
         stmts_string
+        (build_offset (padding + padding_offset))
+        (build_offset (padding + (padding_offset * 2)))
+        arg_string
 
 and string_of_expression ?(padding=0) node : string = Ast.Standard.(
   match node with
@@ -76,8 +80,8 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
 
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(
   match node with
-  | Int n -> Printf.sprintf "%d" n
-  | Variable name -> Printf.sprintf "%s" name
+  | Int n -> Printf.sprintf "Int: %d" n
+  | Variable name -> Printf.sprintf "Variable: %s" name
 )
 
 and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(

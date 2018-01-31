@@ -5,25 +5,25 @@ open Compiler
 open Pprint_ast
 
 let test_int () = Ast.Standard.(
-  let output = Program (Int 2)
+  let actual = Program (Int 2)
     |> Uniquify.transform
     |> string_of_program in
   let expect = Program (Int 2)
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_read () = Ast.Standard.(
-  let output = Program (Read)
+  let actual = Program (Read)
     |> Uniquify.transform
     |> string_of_program in
   let expect = Program (Read)
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_binop () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (BinaryExpression
       (Plus,
       (Int 1),
@@ -36,11 +36,11 @@ let test_binop () = Ast.Standard.(
       (Int 1),
       (Int 2)))
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_unop () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (UnaryExpression
       (Minus,
       (Int 2)))
@@ -51,11 +51,11 @@ let test_unop () = Ast.Standard.(
       (Minus,
       (Int 2)))
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_letexpr () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (LetExpression
       ("x",
       (Int 1),
@@ -68,11 +68,11 @@ let test_letexpr () = Ast.Standard.(
       (Int 1),
       (Int 2)))
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_letexpr_nested_diff_name () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (LetExpression
       ("x",
       (Int 1),
@@ -91,11 +91,11 @@ let test_letexpr_nested_diff_name () = Ast.Standard.(
           (Int 1),
           (Variable "x_1")))))
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_letexpr_nested_same_name () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (LetExpression
       ("x",
       (Int 1),
@@ -114,11 +114,11 @@ let test_letexpr_nested_same_name () = Ast.Standard.(
           (Int 1),
           (Variable "x_2")))))
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_letexpr_illegal_ref1 () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (LetExpression
       ("x",
       (Int 1),
@@ -126,12 +126,12 @@ let test_letexpr_illegal_ref1 () = Ast.Standard.(
         ("y",
         (Int 1),
         (Variable "z"))))) in
-  let fn = fun () -> Uniquify.transform output in
+  let fn = fun () -> Uniquify.transform actual in
   assert_raises (Uniquify.Illegal_variable_reference "z") fn
 )
 
 let test_letexpr_illegal_ref2 () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (LetExpression
       ("x",
       (Int 1),
@@ -139,12 +139,12 @@ let test_letexpr_illegal_ref2 () = Ast.Standard.(
         ("y",
         (Variable "y"),
         (Int 1))))) in
-  let fn = fun () -> Uniquify.transform output in
+  let fn = fun () -> Uniquify.transform actual in
   assert_raises (Uniquify.Illegal_variable_reference "y") fn
 )
 
 let test_complex () = Ast.Standard.(
-  let output = Program
+  let actual = Program
     (LetExpression
       ("x",
       (Int 1),
@@ -185,7 +185,7 @@ let test_complex () = Ast.Standard.(
                 (Int 1))),
               (Variable "x_2")))))))))))
     |> string_of_program in
-  assert_equal output expect
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let main () = Runner.(

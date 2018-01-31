@@ -6,7 +6,7 @@ open Uniquify
 let prog = Program
   (LetExpression
     ("x",
-    (Variable "x"),
+    (Int 1),
     (Int 1)))
 
 let _ =

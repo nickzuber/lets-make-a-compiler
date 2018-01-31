@@ -19,12 +19,12 @@ let rec flatten (expr : Standard.expression) (count : int) : string list * Flat.
       statements @ [assign] @ statements',
       argument')
   | Standard.UnaryExpression (op, expr) ->
-      let name = "unaryExpr_" ^ (string_of_int count) in
+      let name = "unary_expression_" ^ (string_of_int count) in
       let (vars, statements, argument) = flatten expr (count + 1) in
       let assign = Assignment (name, UnaryExpression (Flat.Minus, argument)) in
       (vars @ [name], statements @ [assign], Variable name)
   | Standard.BinaryExpression (op, lhs, rhs) ->
-      let name = "binaryExpr_" ^ (string_of_int count) in
+      let name = "binary_expression_" ^ (string_of_int count) in
       let (vars_lhs, statements_lhs, argument_lhs) = flatten lhs (count + 1) in
       let (vars_rhs, statements_rhs, argument_rhs) = flatten rhs (count + 1) in
       let assign = Assignment (name, BinaryExpression (Flat.Plus, argument_rhs, argument_lhs)) in
@@ -32,7 +32,7 @@ let rec flatten (expr : Standard.expression) (count : int) : string list * Flat.
       statements_lhs @ statements_rhs @ [assign],
       Variable name)
   | Standard.Read ->
-      let name = "read_x" in
+      let name = "read_" ^ (string_of_int count) in
       let assign = Assignment (name, Read) in
       ([name], [assign], Variable name)
   | Standard.Variable v -> ([], [], (Variable v))

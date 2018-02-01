@@ -6,19 +6,15 @@ open Pprint_ast
 
 let test_int () = Ast.Standard.(
   let actual = Program (Int 2)
-    |> Uniquify.transform
-    |> string_of_program in
-  let expect = Program (Int 2)
-    |> string_of_program in
+    |> Uniquify.transform in
+  let expect = Program (Int 2) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
 let test_read () = Ast.Standard.(
   let actual = Program (Read)
-    |> Uniquify.transform
-    |> string_of_program in
-  let expect = Program (Read)
-    |> string_of_program in
+    |> Uniquify.transform in
+  let expect = Program (Read) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
@@ -28,14 +24,12 @@ let test_binop () = Ast.Standard.(
       (Plus,
       (Int 1),
       (Int 2)))
-    |> Uniquify.transform
-    |> string_of_program in
+    |> Uniquify.transform in
   let expect = Program
     (BinaryExpression
       (Plus,
       (Int 1),
-      (Int 2)))
-    |> string_of_program in
+      (Int 2))) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
@@ -44,13 +38,11 @@ let test_unop () = Ast.Standard.(
     (UnaryExpression
       (Minus,
       (Int 2)))
-    |> Uniquify.transform
-    |> string_of_program in
+    |> Uniquify.transform in
   let expect = Program
     (UnaryExpression
       (Minus,
-      (Int 2)))
-    |> string_of_program in
+      (Int 2))) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
@@ -60,14 +52,12 @@ let test_letexpr () = Ast.Standard.(
       ("x",
       (Int 1),
       (Int 2)))
-    |> Uniquify.transform
-    |> string_of_program in
+    |> Uniquify.transform in
   let expect = Program
     (LetExpression
       ("x_1",
       (Int 1),
-      (Int 2)))
-    |> string_of_program in
+      (Int 2))) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
@@ -80,17 +70,15 @@ let test_letexpr_nested_diff_name () = Ast.Standard.(
         ("y",
         (Int 1),
         (Variable "x")))))
-    |> Uniquify.transform
-    |> string_of_program in
+    |> Uniquify.transform in
   let expect = Program
+    (LetExpression
+      ("x_1",
+      (Int 1),
       (LetExpression
-        ("x_1",
+        ("y_1",
         (Int 1),
-        (LetExpression
-          ("y_1",
-          (Int 1),
-          (Variable "x_1")))))
-    |> string_of_program in
+        (Variable "x_1"))))) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
@@ -103,17 +91,15 @@ let test_letexpr_nested_same_name () = Ast.Standard.(
         ("x",
         (Int 1),
         (Variable "x")))))
-    |> Uniquify.transform
-    |> string_of_program in
+    |> Uniquify.transform in
   let expect = Program
+    (LetExpression
+      ("x_1",
+      (Int 1),
       (LetExpression
-        ("x_1",
+        ("x_2",
         (Int 1),
-        (LetExpression
-          ("x_2",
-          (Int 1),
-          (Variable "x_2")))))
-    |> string_of_program in
+        (Variable "x_2"))))) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 
@@ -163,8 +149,7 @@ let test_complex () = Ast.Standard.(
                 (Minus,
                 (Int 1))),
               (Variable "x")))))))))))
-    |> Uniquify.transform
-    |> string_of_program in
+    |> Uniquify.transform in
   let expect = Program
     (LetExpression
       ("x_1",
@@ -183,8 +168,7 @@ let test_complex () = Ast.Standard.(
               (UnaryExpression
                 (Minus,
                 (Int 1))),
-              (Variable "x_2")))))))))))
-    |> string_of_program in
+              (Variable "x_2"))))))))))) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 )
 

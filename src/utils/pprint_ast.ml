@@ -80,8 +80,8 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
 
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(
   match node with
-  | Int n -> Printf.sprintf "Int: %d" n
-  | Variable name -> Printf.sprintf "Variable: %s" name
+  | Int n -> Printf.sprintf "Int(%d)" n
+  | Variable name -> Printf.sprintf "%s" name
 )
 
 and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
@@ -105,7 +105,7 @@ and string_of_flat_binop ?(padding=0) node : string = Ast.Flat.(
 
 and string_of_flat_unop ?(padding=0) node : string = Ast.Flat.(
   match node with
-  | Minus -> Printf.sprintf "%s-" (build_offset padding))
+  | Minus -> Printf.sprintf "%s(-)" (build_offset padding))
 
 let display_input (prog : program) : program =
   print_endline "\n──< \x1b[1mInput\x1b[0m >────────────────────\n";

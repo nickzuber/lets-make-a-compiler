@@ -2,8 +2,8 @@ OCB_FLAGS = -use-ocamlfind -pkg core,batteries,ounit -tags thread
 OCB =       ocamlbuild $(OCB_FLAGS)
 
 MODULES = src \
-					src/transformers \
-					src/utils
+					utils \
+					src/transformers
 
 INCLUDE_MODULES = $(foreach dir, $(MODULES), -I $(dir))
 

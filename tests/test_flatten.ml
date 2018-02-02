@@ -109,6 +109,27 @@ let test_unnop () =
   ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
+  let test_unnop_nested () =
+  let actual = Ast.Standard.(
+    Program
+      (UnaryExpression
+        (Minus,
+        (UnaryExpression
+          (Minus,
+          (Int 3)))))
+  ) |> Flatten.transform in
+  let expect = Ast.Flat.(
+    FlatProgram
+      (["unary_expression_1"; "unary_expression_0"],
+       [(Assignment
+          ("unary_expression_0",
+          (UnaryExpression
+            (Minus,
+            (Int 3)))))],
+       Variable "unary_expression_0")
+  ) in
+  assert_equal actual expect ~pp_diff:Runner.pprint_diff
+
 let test_letexpr1 () =
   let actual = Ast.Standard.(
     Program
@@ -253,6 +274,7 @@ let main () = Runner.(
   run test_binop1 "binary expression" "Should make and return variable for binary expression";
   run test_binop2 "binary expression" "Should make all binary expressions";
   run test_unnop "unary expression" "Should make and return variable for unary expression";
+  run test_unnop_nested "nested unary expression" "Should make and return variable for unary expression";
   run test_letexpr1 "let expression simple" "Should make let expression and return second expr argument";
   run test_letexpr2 "let expression binop" "Should make let expression and return second expr argument";
   run test_letexpr_nested_diff_name "let expression x and y" "Should make let expression and return second expr argument";

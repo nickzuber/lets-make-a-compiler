@@ -67,9 +67,9 @@ let test_binop2 () =
   ) |> Flatten.transform in
   let expect = Ast.Flat.(
     FlatProgram
-      (["binary_expression_2"; "binary_expression_1"; "binary_expression_0"],
+      (["binary_expression_3"; "binary_expression_1"; "binary_expression_0"],
        [(Assignment
-          ("binary_expression_2",
+          ("binary_expression_3",
           (BinaryExpression
             (Plus,
             (Int 1),
@@ -79,7 +79,7 @@ let test_binop2 () =
           (BinaryExpression
             (Plus,
             (Int 1),
-            (Variable "binary_expression_2")))));
+            (Variable "binary_expression_3")))));
         (Assignment
           ("binary_expression_0",
           (BinaryExpression
@@ -109,7 +109,7 @@ let test_unnop () =
   ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
-  let test_unnop_nested () =
+let test_unnop_nested () =
   let actual = Ast.Standard.(
     Program
       (UnaryExpression
@@ -122,10 +122,15 @@ let test_unnop () =
     FlatProgram
       (["unary_expression_1"; "unary_expression_0"],
        [(Assignment
+          ("unary_expression_1",
+          (UnaryExpression
+            (Minus,
+            (Int 3)))));
+        (Assignment
           ("unary_expression_0",
           (UnaryExpression
             (Minus,
-            (Int 3)))))],
+            (Variable "unary_expression_1")))))],
        Variable "unary_expression_0")
   ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
@@ -245,25 +250,62 @@ let test_complex () =
   ) |> Flatten.transform in
   let expect = Ast.Flat.(
     FlatProgram
-      (["unary_expression_1"; "binary_expression_0"; "y_1"; "x_1"],
+      (["unary_expression_2";
+        "binary_expression_1";
+        "y_1";
+        "x_1";
+        "unary_expression_8";
+        "binary_expression_7";
+        "unary_expression_6";
+        "unary_expression_5";
+        "binary_expression_0";],
        [(Assignment
-          ("unary_expression_1",
+          ("unary_expression_2",
           (UnaryExpression
             (Minus,
             (Int 3)))));
         (Assignment
-          ("binary_expression_0",
+          ("binary_expression_1",
           (BinaryExpression
             (Plus,
-            (Variable "unary_expression_1"),
+            (Variable "unary_expression_2"),
             (Int 2)))));
         (Assignment
           ("x_1",
-          (Argument (Variable "binary_expression_0"))));
+          (Argument (Variable "binary_expression_1"))));
         (Assignment
           ("y_1",
-          (Argument (Int 1))))],
-       Variable "x_1")
+          (Argument (Int 1))));
+        (Assignment
+          ("unary_expression_8",
+          (UnaryExpression
+            (Minus,
+            (Int 3)))));
+        (Assignment
+          ("binary_expression_7",
+          (BinaryExpression
+            (Plus,
+            (Variable "unary_expression_8"),
+            (Int 2)))));
+        (Assignment
+          ("unary_expression_6",
+          (UnaryExpression
+            (Minus,
+            (Variable "binary_expression_7")))));
+        (Assignment
+          ("unary_expression_5",
+          (UnaryExpression
+            (Minus,
+            (Variable "unary_expression_6")))));
+        (Assignment
+          ("binary_expression_0",
+          (BinaryExpression
+            (Plus,
+            (Variable "x_1"),
+            (Variable "unary_expression_5")))));
+
+            ],
+       Variable "binary_expression_0")
   ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 

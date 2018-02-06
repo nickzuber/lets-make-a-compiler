@@ -1,5 +1,8 @@
 open Pprint_ast
 
+let pass = ref 0
+let fail = ref 0
+
 let pprint_diff _formatter results =
   let (actual, expect) = results in
   let actual' = string_of_program actual ~padding:2 in
@@ -19,6 +22,9 @@ let pprint_diff _formatter results =
 let run test name desc =
   try
     test ();
-    print_endline ("\x1b[32m✓ success\x1b[39m " ^ name)
+    print_endline ("\x1b[32m✓ success\x1b[39m " ^ name);
+    pass := !pass + 1
   with
-    | _ -> print_endline ("\x1b[31m✕ failure\x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")
+    | _ ->
+      fail := !fail + 1;
+      print_endline ("\x1b[31m✕ failure\x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")

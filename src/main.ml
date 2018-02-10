@@ -4,10 +4,30 @@ open Pprint_ast
 open Uniquify
 
 let prog = Program
-  (LetExpression
-    ("x",
-    (Int 1),
-    (Int 1)))
+  (BinaryExpression
+    (Plus,
+    (LetExpression
+      ("x_1",
+      (BinaryExpression
+        (Plus,
+        (UnaryExpression
+          (Minus,
+          (Int 3))),
+        (Int 2))),
+      (LetExpression
+        ("y_1",
+        (Int 1),
+        (Variable "x_1"))))),
+  (UnaryExpression
+    (Minus,
+    (UnaryExpression
+      (Minus,
+      (BinaryExpression
+        (Plus,
+        (UnaryExpression
+          (Minus,
+          (Int 3))),
+        (Int 2)))))))))
 
 let _ =
   try

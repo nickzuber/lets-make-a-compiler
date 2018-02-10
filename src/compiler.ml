@@ -1,6 +1,11 @@
 open Ast
 open Pprint_ast
 
+
+
+
+
+
 (* The core compiling routine *)
 let compile (prog : program) =
   print_endline "\n\x1b[90mCompiling program...\x1b[39m";
@@ -8,7 +13,9 @@ let compile (prog : program) =
     |> Uniquify.transform
     |> display_output "Uniquify"
     |> Flatten.transform
-    |> display_output "Flatten" in
+    |> display_output "Flatten"
+    |> Selectify.transform
+    |> display_output "Select" in
   ()
 
 (* Run the executable x86-64 binary *)

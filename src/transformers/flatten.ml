@@ -2,7 +2,7 @@ open Ast
 open Ast.Flat
 
 exception Illegal_variable_reference of string
-exception Incorrect_step
+exception Incorrect_step of string
 
 (* Given a standard AST, we want to convert this to a new AST that omits all nesting. The end result
  * is essentially a list of statements that we want to pass on. Newly created variables will be given
@@ -44,10 +44,10 @@ let rec flatten (expr : Standard.expression) (count : int) : int * string list *
   | Standard.Variable v -> (count, [], [], (Variable v))
   | Standard.Int n -> (count, [], [], Int n)
 
-(*  *)
+(* Given a program, transform it into a flat program such that all forms of nesting is removed. *)
 let transform (prog : program) : program =
   let count = 0 in
   let (_, vars, statements, argument) = match prog with
     | Program expr -> flatten expr count
-    | _ -> raise Incorrect_step in
+    | _ -> raise (Incorrect_step "expected type Program") in
   FlatProgram (vars, statements, argument)

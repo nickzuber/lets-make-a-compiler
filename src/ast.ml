@@ -29,6 +29,41 @@ module rec Flat : sig
     | Assignment of string * expression
 end = Flat
 
+module rec Select : sig
+  type reg = string
+  type arg =
+    | INT of int
+    | VARIABLE of string
+    | REGISTER of string
+  type instruction =
+    | ADDQ of arg * arg
+    | MOVQ of arg * arg
+    | CALLQ of string
+    | NEGQ of arg
+    | RETQ of arg
+    | PUSHQ of arg
+    | POPQ of arg
+    | SUBQ of arg * arg
+end = Select
+
+module rec Assembly : sig
+  type arg =
+    | INT of int
+    | REGISTER of string
+    | LOCATION of string * int
+  type instruction =
+    | ADDQ of arg * arg
+    | MOVQ of arg * arg
+    | CALLQ of string
+    | NEGQ of arg
+    | RETQ of arg
+    | PUSHQ of arg
+    | POPQ of arg
+    | SUBQ of arg * arg
+end = Assembly
+
 type program =
   | Program of Standard.expression
   | FlatProgram of string list * Flat.statement list * Flat.argument
+  | SelectProgram of string list * Select.instruction list
+  | AssemblyProgram of Assembly.instruction list

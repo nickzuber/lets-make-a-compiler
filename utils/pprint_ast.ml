@@ -21,6 +21,12 @@ let rec string_of_program ?(padding=0) node : string =
         (build_offset (padding + padding_offset))
         (build_offset (padding + (padding_offset * 2)))
         arg_string
+  | SelectProgram (_vars, instructions) ->
+      let instructions_string = string_of_instructions instructions ~padding:(padding) in
+      Printf.sprintf "%sSelectProgram:%s"
+        (build_offset padding)
+        instructions_string
+  | AssemblyProgram instructions -> "(not implemented)"
 
 and string_of_expression ?(padding=0) node : string = Ast.Standard.(
   match node with
@@ -61,6 +67,13 @@ and string_of_statements ?(padding=0) stmts : string = Ast.Flat.(
   start ^ statements
 )
 
+and string_of_instructions ?(padding=0) instructions : string = Ast.Select.(
+  let instructions_string = List.fold_left (fun acc instr ->
+    let str = string_of_instruction instr ~padding:(padding + padding_offset) in
+    acc ^ "\n" ^ str) "" instructions in
+  (build_offset padding) ^ instructions_string
+)
+
 and string_of_variables ?(padding=0) vars : string = Ast.Flat.(
   let start = (build_offset padding) ^ "Variables:" in
   let variables = List.fold_left (fun acc var ->
@@ -76,6 +89,51 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
         (build_offset padding)
         (name)
         (string_of_flat_expression expr)
+)
+
+and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
+  match instruction with
+  | ADDQ (a, b) ->
+      Printf.sprintf "%saddq %s %s"
+      (build_offset padding)
+      (string_of_arg a)
+      (string_of_arg b)
+  | MOVQ (a, b) ->
+      Printf.sprintf "%smovq %s %s"
+      (build_offset padding)
+      (string_of_arg a)
+      (string_of_arg b)
+  | CALLQ l ->
+      Printf.sprintf "%scallq %s" l
+      (build_offset padding)
+  | NEGQ a ->
+      Printf.sprintf "%snegq %s"
+      (build_offset padding)
+      (string_of_arg a)
+  | RETQ a ->
+      Printf.sprintf "%sretq %s"
+      (build_offset padding)
+      (string_of_arg a)
+  | PUSHQ a ->
+      Printf.sprintf "%spushq %s"
+      (build_offset padding)
+      (string_of_arg a)
+  | POPQ a ->
+      Printf.sprintf "%spopq %s"
+      (build_offset padding)
+      (string_of_arg a)
+  | SUBQ (a, b) ->
+      Printf.sprintf "%ssubq %s %s"
+      (build_offset padding)
+      (string_of_arg a)
+      (string_of_arg b)
+)
+
+and string_of_arg ?(padding=0) arg : string = Ast.Select.(
+  match arg with
+  | INT n -> Printf.sprintf "%d" n
+  | VARIABLE v -> Printf.sprintf "%s" v
+  | REGISTER r -> Printf.sprintf "$%s" r
 )
 
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(

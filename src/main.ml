@@ -27,7 +27,7 @@ let prog = Program
         (UnaryExpression
           (Minus,
           (Int 3))),
-        (Int 2)))))))))
+        (Read)))))))))
 
 let _ =
   try

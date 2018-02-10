@@ -43,11 +43,11 @@ let rec select (stmts : Flat.statement list) : Select.instruction list =
 (* Given a flattened program, produce a program that's like assembly, but we still
    have variable names. *)
 let transform (prog : program) : program =
-  let (vars, instructions) = match prog with
+  let (vars, instructions, final_instruction) = match prog with
     | FlatProgram (vars, stmts, arg) ->
         let instrs = select stmts in
         (* The final flat program argument is the result of running this program. *)
         let final_instr = arg_of_flat_argument arg in
-        (vars, instrs @ [RETQ final_instr])
+        (vars, instrs, RETQ final_instr)
     | _ -> raise (Incorrect_step "expected type FlatProgram") in
-  SelectProgram (vars, instructions)
+  SelectProgram (vars, instructions, final_instruction)

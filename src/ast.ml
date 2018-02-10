@@ -65,5 +65,5 @@ end = Assembly
 type program =
   | Program of Standard.expression
   | FlatProgram of string list * Flat.statement list * Flat.argument
-  | SelectProgram of string list * Select.instruction list
+  | SelectProgram of string list * Select.instruction list * Select.instruction
   | AssemblyProgram of Assembly.instruction list

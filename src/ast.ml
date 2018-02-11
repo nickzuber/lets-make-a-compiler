@@ -37,29 +37,29 @@ module rec Select : sig
     | REGISTER of string
   type instruction =
     | ADDQ of arg * arg
+    | SUBQ of arg * arg
     | MOVQ of arg * arg
-    | CALLQ of string
+    | CALLQ of string  (* label *)
     | NEGQ of arg
     | RETQ of arg
     | PUSHQ of arg
     | POPQ of arg
-    | SUBQ of arg * arg
 end = Select
 
 module rec Assembly : sig
   type arg =
     | INT of int
     | REGISTER of string
-    | LOCATION of string * int
+    | REFERENCE of string * int
   type instruction =
     | ADDQ of arg * arg
+    | SUBQ of arg * arg
     | MOVQ of arg * arg
-    | CALLQ of string
+    | CALLQ of string  (* label *)
     | NEGQ of arg
     | RETQ of arg
     | PUSHQ of arg
     | POPQ of arg
-    | SUBQ of arg * arg
 end = Assembly
 
 type program =

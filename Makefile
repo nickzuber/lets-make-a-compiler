@@ -22,7 +22,13 @@ run-test:
 build-test:
 	$(OCB) $(INCLUDE_MODULES) tests/test_main.native
 
+build-with-runtime:
+	cc -c runtime/basics.c -o basics.o
+	cc basics.o assembly.s -o program
+
 clean:
 	$(OCB) -clean
+	rm *.o
+	rm ./program
 
 .PHONY: all run build build-test test try clean

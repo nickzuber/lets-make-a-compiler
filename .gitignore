@@ -2,6 +2,9 @@
 _build
 *.native
 *.pyc
+*.o
+*.out
+./program
 
 # Others
 .DS_Store

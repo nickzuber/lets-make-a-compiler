@@ -31,9 +31,15 @@ let prog = Program
 
 let _ =
   try
-    prog
+    let _ = prog
       |> display_input
-      |> Compiler.compile_and_run
+      |> Compiler.compile_and_debug in
+    print_endline "\n──< \x1b[1mActual assembly\x1b[0m >────────────────────\n";
+    let _ = prog
+      |> Compiler.compile
+      |> Assembler.string_of_assembly
+      |> print_endline in
+    ()
   with
     | Illegal_variable_reference name ->
         let msg = "variable \x1b[33m" ^ name ^ "\x1b[39m was referenced out of scope." in

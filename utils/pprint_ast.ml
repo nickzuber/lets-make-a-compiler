@@ -146,37 +146,36 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
 and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assembly.(
   match instruction with
   | ADDQ (a, b) ->
-      Printf.sprintf "%saddq %s, %s"
+      Printf.sprintf "%saddq \t%s, %s"
       (build_offset padding)
       (string_of_assembly_arg a)
       (string_of_assembly_arg b)
   | MOVQ (a, b) ->
-      Printf.sprintf "%smovq %s, %s"
+      Printf.sprintf "%smovq \t%s, %s"
       (build_offset padding)
       (string_of_assembly_arg a)
       (string_of_assembly_arg b)
   | CALLQ l ->
-      Printf.sprintf "%scallq %s"
+      Printf.sprintf "%scallq \t%s"
       (build_offset padding)
       l
   | NEGQ a ->
-      Printf.sprintf "%snegq %s"
+      Printf.sprintf "%snegq \t%s"
       (build_offset padding)
       (string_of_assembly_arg a)
   | RETQ a ->
-      Printf.sprintf "%sretq %s"
+      Printf.sprintf "%sretq"
       (build_offset padding)
-      (string_of_assembly_arg a)
   | PUSHQ a ->
-      Printf.sprintf "%spushq %s"
+      Printf.sprintf "%spushq \t%s"
       (build_offset padding)
       (string_of_assembly_arg a)
   | POPQ a ->
-      Printf.sprintf "%spopq %s"
+      Printf.sprintf "%spopq \t%s"
       (build_offset padding)
       (string_of_assembly_arg a)
   | SUBQ (a, b) ->
-      Printf.sprintf "%ssubq %s, %s"
+      Printf.sprintf "%ssubq \t%s, %s"
       (build_offset padding)
       (string_of_assembly_arg a)
       (string_of_assembly_arg b)
@@ -191,9 +190,9 @@ and string_of_arg ?(padding=0) arg : string = Ast.Select.(
 
 and string_of_assembly_arg ?(padding=0) arg : string = Ast.Assembly.(
   match arg with
-  | INT n -> Printf.sprintf "%d" n
+  | INT n -> Printf.sprintf "$%d" n
   | REGISTER r -> Printf.sprintf "%%%s" r
-  | LOCATION (r, offset) -> Printf.sprintf "%%(%s + %d)" r offset
+  | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r
 )
 
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(

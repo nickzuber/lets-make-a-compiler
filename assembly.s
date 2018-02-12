@@ -1,5 +1,5 @@
     .globl _asm_main
-_asm_main:  
+_asm_main:
     subq 	$80, %rsp
     movq 	$3, 0(%rsp)
     negq 	0(%rsp)

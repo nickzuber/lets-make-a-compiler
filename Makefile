@@ -23,8 +23,8 @@ build-test:
 	$(OCB) $(INCLUDE_MODULES) tests/test_main.native
 
 build-with-runtime:
-	cc -c runtime/basics.c -o basics.o
-	cc basics.o assembly.s -o program
+	cc -c runtime/basics.c -o runtime/basics.o
+	cc runtime/basics.o assembly.s -o program
 
 clean:
 	$(OCB) -clean

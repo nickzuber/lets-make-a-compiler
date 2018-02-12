@@ -1,4 +1,4 @@
-OCB_FLAGS = -use-ocamlfind -pkg core,batteries,ounit -tags thread
+OCB_FLAGS = -use-ocamlfind -pkg core,batteries,ounit -tags thread -no-hygiene
 OCB =       ocamlbuild $(OCB_FLAGS)
 
 MODULES = src \
@@ -28,7 +28,7 @@ build-with-runtime:
 
 clean:
 	$(OCB) -clean
-	rm *.o
+	rm runtime/*.o
 	rm ./program
 
 .PHONY: all run build build-test test try clean

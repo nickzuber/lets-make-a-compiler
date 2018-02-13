@@ -3,19 +3,30 @@ open Ast.Standard
 open Pprint_ast
 open Uniquify
 
+let rec pow2 n =
+  if n = 0 then
+    (Int 1)
+  else
+    (BinaryExpression
+       (Plus,
+        (pow2 (n - 1)),
+        (pow2 (n - 1))))
+
 let prog = Program
     (BinaryExpression
        (Plus,
-        (UnaryExpression
-           (Minus,
-            (Int 1))),
+        (Read),
         (BinaryExpression
            (Plus,
-            (Int 4),
-            (Int 2)))))
+            (Read),
+            (Int 0)))))
+
+let prog_tons_of_variables = Program
+    (pow2 10)
 
 let _ =
   try
+    display "Current program representation";
     prog |> display_input |> Compiler.compile_and_debug;
     Compiler.compile_and_run prog
   with

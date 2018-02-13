@@ -228,12 +228,12 @@ and string_of_flat_unop ?(padding=0) node : string = Ast.Flat.(
     | Minus -> Printf.sprintf "%s(-)" (build_offset padding))
 
 let display_input (prog : program) : program =
-  print_endline ("\n\x1b[1mInput\x1b[0m");
+  print_endline ("\n[\x1b[1mInput\x1b[0m]");
   print_endline (string_of_program prog ~padding:1);
   prog
 
 let display_output (title : string) (prog : program) : program =
-  print_endline ("\n\x1b[1m" ^ title ^ "\x1b[0m");
+  print_endline ("\n[\x1b[1m" ^ title ^ "\x1b[0m]");
   print_endline (string_of_program prog ~padding:1);
   prog
 
@@ -242,5 +242,22 @@ let display_error title msg : string =
                   \n  \x1b[31m●\x1b[39m %s\n"
     title msg
 
+let make_dashes len : string =
+  let rec loop str i =
+    if i > 0 then
+      loop (str ^ "-=") (i - 1)
+    else
+      str
+  in loop "" len
+
 let display title : unit =
-  Printf.printf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\x1b[39m" title
+  let title_len = String.length title in
+  let amt_of_dashes = 35 - (title_len / 2) in
+  let end_dashes = make_dashes amt_of_dashes in
+  Printf.printf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m%s\x1b[39m %s" title end_dashes Emoji.herb
+
+let create_display title : string =
+  let title_len = String.length title in
+  let amt_of_dashes = 35 - (title_len / 2) in
+  let end_dashes = make_dashes amt_of_dashes in
+  Printf.sprintf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m%s\x1b[39m %s" title end_dashes Emoji.herb

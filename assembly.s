@@ -2,15 +2,18 @@
 _asm_main:  
     pushq 	%rbp
     movq 	%rsp, %rbp
-    subq 	$24, %rsp
-    movq 	$1, -8(%rbp)
-    negq 	-8(%rbp)
-    movq 	$4, -16(%rbp)
-    addq 	$2, -16(%rbp)
-    movq 	-8(%rbp), %rax
-    movq 	%rax, -24(%rbp)
+    subq 	$32, %rsp
+    callq 	_read_int
+    movq 	%rax, -8(%rbp)
+    callq 	_read_int
+    movq 	%rax, -16(%rbp)
     movq 	-16(%rbp), %rax
-    addq 	%rax, -24(%rbp)
+    movq 	%rax, -24(%rbp)
+    addq 	$0, -24(%rbp)
+    movq 	-8(%rbp), %rax
+    movq 	%rax, -32(%rbp)
     movq 	-24(%rbp), %rax
+    addq 	%rax, -32(%rbp)
+    movq 	-32(%rbp), %rax
     leaveq
     retq

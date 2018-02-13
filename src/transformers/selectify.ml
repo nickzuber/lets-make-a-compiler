@@ -40,8 +40,7 @@ let rec select (stmts : Flat.statement list) : Select.instruction list =
   | stmt :: [] -> select_single_statement stmt
   | stmt :: rest -> (select_single_statement stmt) @ (select rest)
 
-(* Given a flattened program, produce a program that's like assembly, but we still
-   have variable names. *)
+(* Given a flattened program, produce a program that's like assembly, but we still have variable names. *)
 let transform (prog : program) : program =
   let (vars, instructions, final_instruction) = match prog with
     | FlatProgram (vars, stmts, arg) ->

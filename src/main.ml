@@ -31,9 +31,8 @@ let prog = Program
 
 let _ =
   try
-    (* let _ = prog |> display_input |> Compiler.compile_and_debug in *)
-    let _ = Compiler.compile_and_run prog
-    in ()
+    prog |> display_input |> Compiler.compile_and_debug;
+    Compiler.compile_and_run prog
   with
     | Illegal_variable_reference name ->
         let msg = "variable \x1b[33m" ^ name ^ "\x1b[39m was referenced out of scope." in

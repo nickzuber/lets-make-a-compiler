@@ -9,9 +9,9 @@ let compile (prog : program) : program =
     |> Assignify.transform
 
 (* Compiles the program decorated with print messages *)
-let compile_and_debug (prog : program) : program =
+let compile_and_debug (prog : program) : unit =
   print_endline "\n\x1b[90m[DEBUG] Compiling program...\x1b[39m";
-  prog |> Uniquify.transform
+  let _ = prog |> Uniquify.transform
     |> display_output "Uniquify"
     |> Flatten.transform
     |> display_output "Flatten"
@@ -19,6 +19,7 @@ let compile_and_debug (prog : program) : program =
     |> display_output "Select"
     |> Assignify.transform
     |> display_output "Assign"
+  in ()
 
 let run (assembly : program) : unit =
   let assembly_filename = "assembly" in

@@ -26,7 +26,7 @@ let build_runtime runtime_filename =
       (Printf.sprintf "gcc -c runtime/%s.c -o runtime/%s.o" runtime_filename runtime_filename) in
   let msg = match build_runtime with
     | Unix.WEXITED n when n = 0 -> "\x1b[32m∗\x1b[39m  built runtime object file\t\t" ^ "[\x1b[1mruntime/" ^ runtime_filename ^ ".o\x1b[0m]"
-    | _ -> "\x1b[31m⊘\x1b[39m  failed to build runtime object file\t\t" ^ "[\x1b[1mruntime/" ^ runtime_filename ^ ".o\x1b[0m]"
+    | _ -> "\x1b[31m⊘\x1b[39m  failed build runtime object file\t" ^ "[\x1b[1mruntime/" ^ runtime_filename ^ ".o\x1b[0m]"
   in print_endline msg
 
 let build_program runtime_filename =
@@ -34,7 +34,7 @@ let build_program runtime_filename =
       (Printf.sprintf "gcc runtime/%s.o assembly.s -o program" runtime_filename) in
   let msg = match build_program with
     | Unix.WEXITED n when n = 0 -> "\x1b[32m∗\x1b[39m  generated executable program\t\t" ^ "[\x1b[1mruntime/" ^ runtime_filename ^ ".o\x1b[0m]"
-    | _ -> "\x1b[31m⊘\x1b[39m  failed to generate executable program\t\t" ^ "[\x1b[1mruntime/" ^ runtime_filename ^ ".o\x1b[0m]"
+    | _ -> "\x1b[31m⊘\x1b[39m  failed generate executable program\t" ^ "[\x1b[1mruntime/" ^ runtime_filename ^ ".o\x1b[0m]"
   in print_endline msg
 
 let run (assembly : program) : unit =

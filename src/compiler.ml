@@ -10,7 +10,7 @@ let compile (prog : program) : program =
 
 (* Compiles the program decorated with print messages *)
 let compile_and_debug (prog : program) : unit =
-  print_endline "\n\x1b[90m[DEBUG] Compiling program...\x1b[39m";
+  display "Compiling each step in debug mode";
   let _ = prog |> Uniquify.transform
     |> display_output "Uniquify"
     |> Flatten.transform
@@ -26,13 +26,18 @@ let run (assembly : program) : unit =
   let runtime_filename = "basics" in
   let assembly_string = Assembler.string_of_assembly assembly in
   Core.Std.Out_channel.write_all (assembly_filename ^ ".s") ~data:assembly_string;
+  print_endline "\n\x1b[32m✓\x1b[39m  building with runtime";
   let _build_runtime = Unix.system
     (Printf.sprintf "cc -c runtime/%s.c -o runtime/%s.o" runtime_filename runtime_filename) in
+  print_endline "\x1b[33m↻\x1b[39m  compiling program";
   let _build_program = Unix.system
-    (Printf.sprintf "cc runtime/%s.o assembly.s -o program" runtime_filename)
-  in ()
+    (Printf.sprintf "cc runtime/%s.o assembly.s -o program" runtime_filename) in
+  print_endline "\x1b[32m✓\x1b[39m  executing program\n";
+  let _run_program = Unix.system "./program" in
+  print_endline ""
 
 (* Runs and compiles the program *)
 let compile_and_run (prog : program) : unit =
-  let assembly = compile prog
+  let assembly = compile prog in
+  let _ = display "Building and running program"
   in run assembly

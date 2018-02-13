@@ -14,13 +14,13 @@ let build_variable_to_offset_mapping (vars : string list) : (string, int) Hashtb
     | var :: rest ->
         Hashtbl.add mapping var (i * -8);
         assign_offset rest (i + 1)
-  in assign_offset vars 0;
+  in assign_offset vars 1;
   mapping
 
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
 let rsp_register_of_variable (mapping : (string, int) Hashtbl.t) (var : string) : Assembly.arg =
   let offset = Hashtbl.find mapping var in
-  REFERENCE ("rsp", offset)
+  REFERENCE ("rbp", offset)
 
 (* Takes a Select arg and creates a Assembly arg from it. This accounts for the variable mapping. *)
 let arg_of_select_arg (mapping : (string, int) Hashtbl.t) (arg : Select.arg) : Assembly.arg =
@@ -87,15 +87,19 @@ let transform (prog : program) : program =
         let variable_size = List.length vars in
         let mapping = build_variable_to_offset_mapping vars in
         (* Push stack pointer down far enough to store a variable in each memory location. *)
-        let prepare_memory = SUBQ (INT (8 * variable_size), REGISTER "rsp") in
+        let prepare_memory =
+          [(PUSHQ (REGISTER "rbp"));
+          (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
+          (SUBQ (INT (8 * variable_size), REGISTER "rsp"))] in
         let instructions = assign mapping instructions in
         let prepare_return = (match final_instruction with
           | Select.RETQ arg ->
             let arg' = arg_of_select_arg mapping arg in
             [MOVQ (arg', REGISTER "rax");
-             ADDQ (INT (8 * variable_size), REGISTER "rsp");
+             (* ADDQ (INT (8 * variable_size), REGISTER "rsp"); *)
+             LEAVEQ;
              RETQ (REGISTER "rax")]
           | _ -> raise (Unexpected_argument)) in
-        prepare_memory :: instructions @ prepare_return
+        prepare_memory @ instructions @ prepare_return
     | _ -> raise (Incorrect_step "expected type SelectProgram") in
   AssemblyProgram instructions

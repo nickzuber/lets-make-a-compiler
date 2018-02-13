@@ -6,28 +6,10 @@ open Uniquify
 let prog = Program
   (BinaryExpression
     (Plus,
-    (LetExpression
-      ("x_1",
-      (BinaryExpression
-        (Plus,
-        (UnaryExpression
-          (Minus,
-          (Int 3))),
-        (Int 2))),
-      (LetExpression
-        ("y_1",
-        (Int 1),
-        (Variable "x_1"))))),
-  (UnaryExpression
-    (Minus,
     (UnaryExpression
       (Minus,
-      (BinaryExpression
-        (Plus,
-        (UnaryExpression
-          (Minus,
-          (Int 3))),
-        (Read)))))))))
+      (Int 3))),
+    (Int 10)))
 
 let _ =
   try

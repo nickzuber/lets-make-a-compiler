@@ -60,6 +60,7 @@ module rec Assembly : sig
     | RETQ of arg
     | PUSHQ of arg
     | POPQ of arg
+    | LEAVEQ
 end = Assembly
 
 type program =

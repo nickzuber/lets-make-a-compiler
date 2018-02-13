@@ -145,6 +145,9 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
 
 and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assembly.(
   match instruction with
+  | LEAVEQ ->
+      Printf.sprintf "%sleaveq"
+      (build_offset padding)
   | ADDQ (a, b) ->
       Printf.sprintf "%saddq \t%s, %s"
       (build_offset padding)
@@ -238,3 +241,6 @@ let display_error title msg : string =
   Printf.sprintf "\n\x1b[31m✗\x1b[39m \x1b[4m%s\x1b[0m\n\
     \n  \x1b[31m●\x1b[39m %s\n"
     title msg
+
+let display title : unit =
+  Printf.printf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\x1b[39m\n" title

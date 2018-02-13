@@ -9,25 +9,25 @@ let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
   | Flat.Variable v -> VARIABLE v
 
 let select_single_statement (stmt : Flat.statement) : Select.instruction list = Flat.(
-  match stmt with
-  | Assignment (var, expr) -> (match expr with
-      | Argument arg ->
+    match stmt with
+    | Assignment (var, expr) -> (match expr with
+        | Argument arg ->
           let src = arg_of_flat_argument arg in
           let dest = VARIABLE var in
           [MOVQ (src, dest)]
-      | Read ->
+        | Read ->
           let src = REGISTER "rax" in
           let dest = VARIABLE var in
-          [CALLQ ("_read");
+          [CALLQ ("_read_int");
            MOVQ (src, dest)]
-      | UnaryExpression (op, arg) -> (match op with
-          | Minus ->
+        | UnaryExpression (op, arg) -> (match op with
+            | Minus ->
               let src = arg_of_flat_argument arg in
               let dest = VARIABLE var in
               [MOVQ (src, dest);
                NEGQ (dest)])
-      | BinaryExpression (op, lhs, rhs) -> (match op with
-          | Plus ->
+        | BinaryExpression (op, lhs, rhs) -> (match op with
+            | Plus ->
               let lhs' = arg_of_flat_argument lhs in
               let rhs' = arg_of_flat_argument rhs in
               let var' = VARIABLE var in
@@ -44,9 +44,9 @@ let rec select (stmts : Flat.statement list) : Select.instruction list =
 let transform (prog : program) : program =
   let (vars, instructions, final_instruction) = match prog with
     | FlatProgram (vars, stmts, arg) ->
-        let instrs = select stmts in
-        (* The final flat program argument is the result of running this program. *)
-        let final_instr = arg_of_flat_argument arg in
-        (vars, instrs, RETQ final_instr)
+      let instrs = select stmts in
+      (* The final flat program argument is the result of running this program. *)
+      let final_instr = arg_of_flat_argument arg in
+      (vars, instrs, RETQ final_instr)
     | _ -> raise (Incorrect_step "expected type FlatProgram") in
   SelectProgram (vars, instructions, final_instruction)

@@ -6,7 +6,7 @@ void print_int (int64_t x) {
   printf("%lld\n", x);
 }
 
-int64_t _read () {
+int64_t read_int () {
   int64_t x = 0;
   scanf("%lld", &x);
   return x;

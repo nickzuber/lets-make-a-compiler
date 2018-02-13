@@ -12,8 +12,8 @@ let build_variable_to_offset_mapping (vars : string list) : (string, int) Hashtb
     match vars with
     | [] -> ()
     | var :: rest ->
-        Hashtbl.add mapping var (i * -8);
-        assign_offset rest (i + 1)
+      Hashtbl.add mapping var (i * -8);
+      assign_offset rest (i + 1)
   in assign_offset vars 1;
   mapping
 
@@ -33,45 +33,43 @@ let arg_of_select_arg (mapping : (string, int) Hashtbl.t) (arg : Select.arg) : A
 let fix_double_memory_references (instruction : Assembly.instruction) : Assembly.instruction list =
   match instruction with
   | ADDQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
-      [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
-       ADDQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
+    [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
+     ADDQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
   | SUBQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
-      [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
-      SUBQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
+    [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
+     SUBQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
   | MOVQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
-      [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
-      MOVQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
+    [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
+     MOVQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
   | _ -> [instruction]
 
 let assign_single_instruction (mapping : (string, int) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =
   match instruction with
   | Select.ADDQ (src, dest) ->
-      let src' = arg_of_select_arg mapping src in
-      let dest' = arg_of_select_arg mapping dest in
-      ADDQ (src', dest') |> fix_double_memory_references
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    ADDQ (src', dest') |> fix_double_memory_references
   | Select.SUBQ (src, dest) ->
-      let src' = arg_of_select_arg mapping src in
-      let dest' = arg_of_select_arg mapping dest in
-      SUBQ (src', dest') |> fix_double_memory_references
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    SUBQ (src', dest') |> fix_double_memory_references
   | Select.MOVQ (src, dest) ->
-      let src' = arg_of_select_arg mapping src in
-      let dest' = arg_of_select_arg mapping dest in
-      MOVQ (src', dest') |> fix_double_memory_references
-  | Select.CALLQ label ->
-      (* Not sure if we need to do anything to labels here, so just pass it for now. *)
-      [CALLQ label]
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    MOVQ (src', dest') |> fix_double_memory_references
+  | Select.CALLQ label -> [CALLQ label]
   | Select.NEGQ src ->
-      let src' = arg_of_select_arg mapping src in
-      [NEGQ src']
+    let src' = arg_of_select_arg mapping src in
+    [NEGQ src']
   | Select.RETQ src ->
-      let src' = arg_of_select_arg mapping src in
-      [RETQ src']
+    let src' = arg_of_select_arg mapping src in
+    [RETQ src']
   | Select.PUSHQ src ->
-      let src' = arg_of_select_arg mapping src in
-      [PUSHQ src']
+    let src' = arg_of_select_arg mapping src in
+    [PUSHQ src']
   | Select.POPQ src ->
-      let src' = arg_of_select_arg mapping src in
-      [POPQ src']
+    let src' = arg_of_select_arg mapping src in
+    [POPQ src']
 
 let rec assign (mapping : (string, int) Hashtbl.t) (instructions : Select.instruction list) : Assembly.instruction list =
   match instructions with
@@ -84,15 +82,15 @@ let rec assign (mapping : (string, int) Hashtbl.t) (instructions : Select.instru
 let transform (prog : program) : program =
   let instructions = match prog with
     | SelectProgram (vars, instructions, final_instruction) ->
-        let variable_size = List.length vars in
-        let mapping = build_variable_to_offset_mapping vars in
-        (* Push stack pointer down far enough to store a variable in each memory location. *)
-        let prepare_memory =
-          [(PUSHQ (REGISTER "rbp"));
-          (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
-          (SUBQ (INT (8 * variable_size), REGISTER "rsp"))] in
-        let instructions = assign mapping instructions in
-        let prepare_return = (match final_instruction with
+      let variable_size = List.length vars in
+      let mapping = build_variable_to_offset_mapping vars in
+      (* Push stack pointer down far enough to store a variable in each memory location. *)
+      let prepare_memory =
+        [(PUSHQ (REGISTER "rbp"));
+         (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
+         (SUBQ (INT (8 * variable_size), REGISTER "rsp"))] in
+      let instructions = assign mapping instructions in
+      let prepare_return = (match final_instruction with
           | Select.RETQ arg ->
             let arg' = arg_of_select_arg mapping arg in
             [MOVQ (arg', REGISTER "rax");
@@ -100,6 +98,6 @@ let transform (prog : program) : program =
              LEAVEQ;
              RETQ (REGISTER "rax")]
           | _ -> raise (Unexpected_argument)) in
-        prepare_memory @ instructions @ prepare_return
+      prepare_memory @ instructions @ prepare_return
     | _ -> raise (Incorrect_step "expected type SelectProgram") in
   AssemblyProgram instructions

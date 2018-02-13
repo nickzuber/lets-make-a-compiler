@@ -10,37 +10,37 @@ exception Incorrect_step of string
 let rec flatten (expr : Standard.expression) (count : int) : int * string list * Flat.statement list * Flat.argument =
   match expr with
   | Standard.LetExpression (name, binding, body) ->
-      let (count', vars_binding, statements_binding, argument_binding) = flatten binding count in
-      let (count'', vars_body, statements_body, argument_body) = flatten body count' in
-      let assign = Assignment (name, Argument argument_binding) in
-      (count'',
-       vars_binding @ vars_body @ [name],
-       statements_binding @ [assign] @ statements_body,
-       argument_body)
+    let (count', vars_binding, statements_binding, argument_binding) = flatten binding count in
+    let (count'', vars_body, statements_body, argument_body) = flatten body count' in
+    let assign = Assignment (name, Argument argument_binding) in
+    (count'',
+     vars_binding @ vars_body @ [name],
+     statements_binding @ [assign] @ statements_body,
+     argument_body)
   | Standard.UnaryExpression (op, expr) ->
-      let name = "unary_expression_" ^ (string_of_int count) in
-      let (count', vars, statements, argument) = flatten expr (count + 1) in
-      let assign = Assignment (name, UnaryExpression (Flat.Minus, argument)) in
-      (count',
-       vars @ [name],
-       statements @ [assign],
-       Variable name)
+    let name = "unary_expression_" ^ (string_of_int count) in
+    let (count', vars, statements, argument) = flatten expr (count + 1) in
+    let assign = Assignment (name, UnaryExpression (Flat.Minus, argument)) in
+    (count',
+     vars @ [name],
+     statements @ [assign],
+     Variable name)
   | Standard.BinaryExpression (op, lhs, rhs) ->
-      let name = "binary_expression_" ^ (string_of_int count) in
-      let (count', vars_lhs, statements_lhs, argument_lhs) = flatten lhs (count + 1) in
-      let (count'', vars_rhs, statements_rhs, argument_rhs) = flatten rhs (count' + 1) in
-      let assign = Assignment (name, BinaryExpression (Flat.Plus, argument_lhs, argument_rhs)) in
-      (count'',
-       vars_lhs @ vars_rhs @ [name],
-       statements_lhs @ statements_rhs @ [assign],
-       Variable name)
+    let name = "binary_expression_" ^ (string_of_int count) in
+    let (count', vars_lhs, statements_lhs, argument_lhs) = flatten lhs (count + 1) in
+    let (count'', vars_rhs, statements_rhs, argument_rhs) = flatten rhs (count' + 1) in
+    let assign = Assignment (name, BinaryExpression (Flat.Plus, argument_lhs, argument_rhs)) in
+    (count'',
+     vars_lhs @ vars_rhs @ [name],
+     statements_lhs @ statements_rhs @ [assign],
+     Variable name)
   | Standard.Read ->
-      let name = "read_" ^ (string_of_int count) in
-      let assign = Assignment (name, Read) in
-      (count,
-       [name],
-       [assign],
-       Variable name)
+    let name = "read_" ^ (string_of_int count) in
+    let assign = Assignment (name, Read) in
+    (count,
+     [name],
+     [assign],
+     Variable name)
   | Standard.Variable v -> (count, [], [], (Variable v))
   | Standard.Int n -> (count, [], [], Int n)
 

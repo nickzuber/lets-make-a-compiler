@@ -13,7 +13,10 @@ let rec pow2 n =
         (pow2 (n - 1))))
 
 let prog = Program
-    Read
+    (BinaryExpression
+       (Plus,
+        (Read),
+        (Read)))
 
 let prog_tons_of_variables = Program
     (pow2 10)

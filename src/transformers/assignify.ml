@@ -7,6 +7,9 @@ exception Unexpected_argument
 (* Creates a mapping of negative word sized offsets to each variable we have. *)
 let build_variable_to_offset_mapping (vars : string list) : (string, int) Hashtbl.t =
   let variable_size = List.length vars in
+  (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
+     https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
+  let rsp_offset_starting_point = if variable_size mod 2 = 0 then 1 else 2 in
   let mapping = Hashtbl.create variable_size in
   let rec assign_offset vars i =
     match vars with
@@ -14,7 +17,7 @@ let build_variable_to_offset_mapping (vars : string list) : (string, int) Hashtb
     | var :: rest ->
       Hashtbl.add mapping var (i * -8);
       assign_offset rest (i + 1)
-  in assign_offset vars 1;
+  in assign_offset vars rsp_offset_starting_point;
   mapping
 
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
@@ -83,12 +86,15 @@ let transform (prog : program) : program =
   let instructions = match prog with
     | SelectProgram (vars, instructions, final_instruction) ->
       let variable_size = List.length vars in
+      (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
+         https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
+      let align_base_pointer_offset = if variable_size mod 2 = 0 then 0 else 1 in
       let mapping = build_variable_to_offset_mapping vars in
       (* Push stack pointer down far enough to store a variable in each memory location. *)
       let prepare_memory =
         [(PUSHQ (REGISTER "rbp"));
          (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
-         (SUBQ (INT (8 * variable_size), REGISTER "rsp"))] in
+         (SUBQ (INT (8 * (variable_size + align_base_pointer_offset)), REGISTER "rsp"))] in
       let instructions = assign mapping instructions in
       let prepare_return = (match final_instruction with
           | Select.RETQ arg ->

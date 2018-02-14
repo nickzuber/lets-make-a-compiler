@@ -45,12 +45,12 @@ let run (assembly : program) : unit =
   Core.Std.Out_channel.write_all (assembly_filename ^ ".s") ~data:assembly_string;
   print_endline ("\x1b[32m∗\x1b[39m  created assembly file\t\t[\x1b[1m" ^ assembly_filename ^ ".s\x1b[0m]");
   (* Create runtime object file *)
-  let _ = build_runtime runtime_filename in
+  build_runtime runtime_filename;
   (* Create executable with runtime and assembly file *)
-  let _ = build_program runtime_filename in
+  build_program runtime_filename;
+  (* Execute the program *)
   print_endline "\x1b[32m∗\x1b[39m  attempting to execute program\t[\x1b[1mprogram.exe\x1b[0m]";
   print_endline (create_display "Output of program");
-  (* Execute the program *)
   let exit_code = Unix.system "./program" in
   let success_message = match exit_code with
     | Unix.WEXITED n when n = 0 -> "Done."

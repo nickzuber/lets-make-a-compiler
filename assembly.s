@@ -2,9 +2,11 @@
 _asm_main:  
     pushq 	%rbp
     movq 	%rsp, %rbp
-    subq 	$16, %rsp
+    subq 	$0, %rsp
     callq 	_read_int
-    movq 	%rax, -16(%rbp)
-    movq 	-16(%rbp), %rax
+    movq 	%rax, %rcx
+    movq 	%rcx, %rdx
+    addq 	$1, %rdx
+    movq 	%rdx, %rax
     leaveq
     retq

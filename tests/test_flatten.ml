@@ -236,7 +236,7 @@ let test_complex () =
                 (LetExpression
                    ("y_1",
                     (Int 1),
-                    (Variable "x_1"))))),
+                    (Variable "x_1a"))))),
             (UnaryExpression
                (Minus,
                 (UnaryExpression
@@ -310,7 +310,7 @@ let test_complex () =
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let main () = Runner.(
-    print_endline ("\n\x1b[1mflatten\x1b[0m");
+    print_endline ("\n[\x1b[1mflatten\x1b[0m]");
     run test_int "int" "Should have nothing and return int";
     run test_read "read" "Should make and return variable for read";
     run test_binop1 "binary expression" "Should make and return variable for binary expression";

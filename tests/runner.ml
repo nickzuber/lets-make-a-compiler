@@ -3,7 +3,7 @@ open Pprint_ast
 let pass = ref 0
 let fail = ref 0
 
-let pprint_diff _formatter results =
+let pprint_diff_verbose _formatter results =
   let (actual, expect) = results in
   let actual' = string_of_program actual ~padding:2 in
   let expect' = string_of_program expect ~padding:2 in
@@ -16,15 +16,19 @@ let pprint_diff _formatter results =
   print_endline expect_string;
   print_endline actual_string;
   print_endline "\x1b[31m: \x1b[39m";
-  print_endline "\x1b[31m└─┐ \x1b[39m";
-  print_endline "\x1b[31m  ↓ \x1b[39m"
+  print_endline "\x1b[31m└──┐ \x1b[39m";
+  print_endline "\x1b[31m   ↓ \x1b[39m"
+
+let pprint_diff_quiet _formatter results = ()
+
+let pprint_diff = if Settings.use_verbose_tests then pprint_diff_verbose else pprint_diff_quiet
 
 let run test name desc =
   try
     test ();
-    print_endline ("\x1b[32m✓ success\x1b[39m " ^ name);
+    print_endline ("\x1b[32m∗  success\x1b[39m " ^ name);
     pass := !pass + 1
   with
   | _ ->
     fail := !fail + 1;
-    print_endline ("\x1b[31m✕ failure\x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")
+    print_endline ("\x1b[31m⊘  failure\x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")

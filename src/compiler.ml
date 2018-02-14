@@ -9,17 +9,16 @@ let compile (prog : program) : program =
   |> Assignify.transform
 
 (* Compiles the program decorated with print messages *)
-let compile_and_debug (prog : program) : unit =
-  Printf.printf "%s" (create_display "Compiling each step in debug mode");
-  let _ = prog |> Uniquify.transform
-          |> display_output "Uniquify"
-          |> Flatten.transform
-          |> display_output "Flatten"
-          |> Selectify.transform
-          |> display_output "Select"
-          |> Assignify.transform
-          |> display_output "Assign"
-  in ()
+let compile_and_debug (prog : program) : program =
+  Printf.printf "%s" (create_title "Compiling each step in debug mode");
+  prog |> Uniquify.transform
+  |> display_title "Uniquify"
+  |> Flatten.transform
+  |> display_title "Flatten"
+  |> Selectify.transform
+  |> display_title "Select"
+  |> Assignify.transform
+  |> display_title "Assign"
 
 let build_runtime runtime_filename =
   let build_runtime = Unix.system
@@ -38,6 +37,7 @@ let build_program runtime_filename =
   in print_endline msg
 
 let run (assembly : program) : unit =
+  print_endline (create_title "Building and running program");
   let runtime_filename = "basics" in
   let assembly_filename = "assembly" in
   let assembly_string = Assembler.string_of_assembly assembly in
@@ -50,15 +50,14 @@ let run (assembly : program) : unit =
   build_program runtime_filename;
   (* Execute the program *)
   print_endline "\x1b[32m∗\x1b[39m  attempting to execute program\t[\x1b[1mprogram.exe\x1b[0m]";
-  print_endline (create_display "Output of program");
+  print_endline (create_title "Output of program");
   let exit_code = Unix.system "./program" in
-  let success_message = match exit_code with
+  let result_message = match exit_code with
     | Unix.WEXITED n when n = 0 -> "Done."
     | _ -> "Failed."
-  in Printf.printf "\n%s\n" success_message
+  in Printf.printf "\n%s\n" result_message
 
 (* Runs and compiles the program *)
 let compile_and_run (prog : program) : unit =
   let assembly = compile prog in
-  print_endline (create_display "Building and running program");
   run assembly

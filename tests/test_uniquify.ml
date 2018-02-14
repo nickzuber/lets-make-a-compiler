@@ -173,7 +173,7 @@ let test_complex () = Ast.Standard.(
   )
 
 let main () = Runner.(
-    print_endline ("\n\x1b[1muniquify\x1b[0m");
+    print_endline ("\n[\x1b[1muniquify\x1b[0m]");
     run test_read "read" "Shouldn't change the structure of the input";
     run test_int "int" "Shouldn't change the structure of the input";
     run test_binop "binary expression" "Shouldn't change the structure of the input";

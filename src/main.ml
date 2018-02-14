@@ -13,16 +13,25 @@ let rec pow2 n =
         (pow2 (n - 1))))
 
 let prog = Program
-    Read
+    (BinaryExpression
+       (Plus,
+        (Read),
+        (Int 1)))
 
 let prog_tons_of_variables = Program
-    (pow2 10)
+    (BinaryExpression
+       (Plus,
+        (Read),
+        (pow2 12)))
 
 let _ =
   try
-    display "Current program representation";
-    prog |> display_input |> Compiler.compile_and_debug;
-    Compiler.compile_and_run prog
+    let prog' = prog in
+    if Settings.debug_mode then
+      (display "Current program representation";
+       prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)
+    else
+      Compiler.compile_and_run prog'
   with
   | Illegal_variable_reference name ->
     let msg = "variable \x1b[33m" ^ name ^ "\x1b[39m was referenced out of scope." in

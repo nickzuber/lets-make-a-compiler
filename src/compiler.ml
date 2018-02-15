@@ -42,7 +42,7 @@ let run (assembly : program) : unit =
   let assembly_filename = "assembly" in
   let assembly_string = Assembler.string_of_assembly assembly in
   (* Create assembly file *)
-  Core.Std.Out_channel.write_all (assembly_filename ^ ".s") ~data:assembly_string;
+  Core.Std.Out_channel.write_all (assembly_filename ^ ".s") ~data:assembly_string [@warning "-3"];
   print_endline ("\x1b[32m∗\x1b[39m  created assembly file\t\t[\x1b[1m" ^ assembly_filename ^ ".s\x1b[0m]");
   (* Create runtime object file *)
   build_runtime runtime_filename;

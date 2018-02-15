@@ -236,7 +236,7 @@ let test_complex () =
                 (LetExpression
                    ("y_1",
                     (Int 1),
-                    (Variable "x_1a"))))),
+                    (Variable "x_1"))))),
             (UnaryExpression
                (Minus,
                 (UnaryExpression

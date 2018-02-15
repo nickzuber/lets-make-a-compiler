@@ -45,7 +45,7 @@ let build_spilled_variable_to_offset_mapping (mapping : (string, Assembly.arg) H
   mapping
 
 
-let create (vars : string list) (instructions : Select.instructions) : (string, Assembly.arg) Hashtbl.t * int =
+let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   (* Map as many variables to registers as we can *)
   let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in
   let spilled_variable_size = List.length unassigned_vars in

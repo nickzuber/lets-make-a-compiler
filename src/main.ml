@@ -19,14 +19,11 @@ let prog = Program
         (Int 1)))
 
 let prog_tons_of_variables = Program
-    (BinaryExpression
-       (Plus,
-        (Read),
-        (pow2 12)))
+    (pow2 2)
 
 let _ =
   try
-    let prog' = prog in
+    let prog' = prog_tons_of_variables in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

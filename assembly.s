@@ -3,10 +3,12 @@ _asm_main:
     pushq 	%rbp
     movq 	%rsp, %rbp
     subq 	$0, %rsp
-    callq 	_read_int
-    movq 	%rax, %rcx
-    movq 	%rcx, %rdx
+    movq 	$1, %rcx
+    addq 	$1, %rcx
+    movq 	$1, %rdx
     addq 	$1, %rdx
-    movq 	%rdx, %rax
+    movq 	%rcx, %rsi
+    addq 	%rdx, %rsi
+    movq 	%rsi, %rax
     leaveq
     retq

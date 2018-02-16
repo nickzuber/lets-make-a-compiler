@@ -3,7 +3,7 @@
 let debug_mode = true
 
 (* Show the verbose diffs if a test case fails. *)
-let use_verbose_tests = false
+let use_verbose_tests = true
 
 (* Kind of like tab space for printing our data structures. *)
 let padding_offset_for_pprint_ast = 2

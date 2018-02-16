@@ -23,7 +23,7 @@ let prog_tons_of_variables = Program
 
 let _ =
   try
-    let prog' = prog in
+    let prog' = prog_tons_of_variables in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

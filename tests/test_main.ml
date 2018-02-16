@@ -8,6 +8,7 @@ let () =
   Test_uniquify.main ();
   Test_flatten.main ();
   Test_select.main ();
+  Test_liveness.main ();
   print_endline (create_title "Test summary");
   Printf.printf " •\x1b[32m %d tests passed\x1b[39m" !Runner.pass;
   (* Show unimplemented *)

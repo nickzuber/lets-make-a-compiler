@@ -103,7 +103,6 @@ let build_spilled_variable_to_offset_mapping (mapping : (string, Assembly.arg) H
   mapping
 
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
-  print_endline "";
   let liveness_mapping = build_liveness_mapping instructions in
   (* Map as many variables to registers as we can *)
   let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in

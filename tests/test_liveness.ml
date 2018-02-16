@@ -14,7 +14,8 @@ let compare_liveness_mappings h1 h2 =
         if h1_liveness <> h2_liveness then (raise Unequal_sets) else ()) h1;
     true
   with
-  | Unequal_sets -> false
+  | Unequal_sets
+  | Not_found -> false
 
 let print_liveness_mapping liveness_mapping =
   Hashtbl.iter (fun instr liveness ->

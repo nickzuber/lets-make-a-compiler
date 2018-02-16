@@ -314,7 +314,7 @@ let main () = Runner.(
     run test_int "int" "Should have nothing and return int";
     run test_read "read" "Should make and return variable for read";
     run test_binop1 "binary expression" "Should make and return variable for binary expression";
-    run test_binop2 "binary expression" "Should make all binary expressions";
+    run test_binop2 "nested binary expression" "Should make all binary expressions";
     run test_unnop "unary expression" "Should make and return variable for unary expression";
     run test_unnop_nested "nested unary expression" "Should make and return variable for unary expression";
     run test_letexpr1 "let expression simple" "Should make let expression and return second expr argument";

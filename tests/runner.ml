@@ -1,7 +1,10 @@
 open Pprint_ast
 
+exception Unimplemented_testcase
+
 let pass = ref 0
 let fail = ref 0
+let unimplemented = ref 0
 
 let pprint_diff_verbose _formatter results =
   let (actual, expect) = results in
@@ -26,9 +29,13 @@ let pprint_diff = if Settings.use_verbose_tests then pprint_diff_verbose else pp
 let run test name desc =
   try
     test ();
-    print_endline ("\x1b[32m∗  success\x1b[39m " ^ name);
+    print_endline ("\x1b[32m∗ \x1b[39m " ^ name);
     pass := !pass + 1
   with
+  | Unimplemented_testcase ->
+    unimplemented := !unimplemented + 1;
+    print_endline ("\x1b[33m↻ \x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")
+
   | _ ->
     fail := !fail + 1;
-    print_endline ("\x1b[31m⊘  failure\x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")
+    print_endline ("\x1b[31m⊘ \x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")

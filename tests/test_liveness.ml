@@ -7,11 +7,23 @@ open Polyfill
 
 exception Unequal_sets
 
+let rec pow2 n = Ast.Standard.(
+    if n = 0 then
+      (Int 1)
+    else
+      (BinaryExpression
+         (Plus,
+          (pow2 (n - 1)),
+          (pow2 (n - 1)))))
+
+let prog_tons_of_variables = Program
+    (pow2 4)
+
 let compare_liveness_mappings h1 h2 =
   try
     Hashtbl.iter (fun instr h1_liveness ->
         let h2_liveness = Hashtbl.find h2 instr in
-        if h1_liveness <> h2_liveness then (raise Unequal_sets) else ()) h1;
+        if h1_liveness <> h2_liveness then (raise Unequal_sets)) h1;
     true
   with
   | Unequal_sets
@@ -19,13 +31,23 @@ let compare_liveness_mappings h1 h2 =
 
 let print_liveness_mapping liveness_mapping =
   Hashtbl.iter (fun instr liveness ->
-      Printf.printf "[%s]: " (string_of_instruction instr);
+      Printf.printf "\n\x1b[90m[%s]\x1b[39m: " (string_of_instruction instr);
       Hashtbl.iter (fun arg _ ->
           match arg with
-          | Select.VARIABLE name -> Printf.printf "%s " name
+          | Select.VARIABLE name -> Printf.printf "\n  %s" name
           | _ -> ()) liveness;
       print_endline ""
     ) liveness_mapping
+
+let iter_select_instructions_of_program fn prog =
+  let select_prog = prog |> Uniquify.transform
+                    |> Flatten.transform
+                    |> Selectify.transform in
+  match select_prog with
+  | SelectProgram (_, instrs, _) ->
+    let mapping = build_liveness_mapping instrs in
+    fn mapping
+  | _ -> ()
 
 let pprint_liveness_diff_verbose _formatter results =
   let (actual, expect) = results in
@@ -100,7 +122,25 @@ let test_class_example () = Ast.Select.(
     assert_equal actual_mapping expect_mapping ~pp_diff:pprint_diff ~cmp:compare_liveness_mappings
   )
 
+let test_custom () =
+  try
+    (* Max live variables is equal to the power of 2 we use. (example) pow2 5, max is 5 *)
+    let max = 4 in
+    let has_failed = ref false in
+    iter_select_instructions_of_program (fun mapping ->
+        Hashtbl.iter (fun _instr liveness ->
+            let size = Set.length liveness in
+            let test = (size <= max) in
+            if test <> true then has_failed := true;
+            let desc = Printf.sprintf ", liveness set was larger than expected (was %d, max %d)" size max in
+            assert_bool desc test) mapping) prog_tons_of_variables
+  with
+  | _ as e ->
+    iter_select_instructions_of_program print_liveness_mapping prog_tons_of_variables;
+    (raise e)
+
 let main () = Runner.(
     print_endline ("\n[\x1b[1mliveness\x1b[0m]");
     run test_class_example "class example" "";
+    run test_custom "many vars, low overlap" "Should be small";
   )

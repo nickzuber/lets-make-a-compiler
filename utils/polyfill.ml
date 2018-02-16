@@ -6,6 +6,7 @@ module Set : sig
   val exists : ('a, unit) Hashtbl.t -> 'a -> bool
   val difference : ('a, unit) Hashtbl.t -> ('a, unit) Hashtbl.t -> ('a, unit) Hashtbl.t
   val union : ('a, unit) Hashtbl.t -> ('a, unit) Hashtbl.t -> ('a, unit) Hashtbl.t
+  val length : ('a, unit) Hashtbl.t -> int
   val set_of_list : 'a list -> ('a, unit) Hashtbl.t
 end = struct
   type 'a t = ('a, unit) Hashtbl.t
@@ -26,6 +27,7 @@ end = struct
     let set' = Hashtbl.copy set1 in
     Hashtbl.iter (fun item _ -> if exists set' item then () else Hashtbl.add set' item ()) set2;
     set'
+  let length set = Hashtbl.length set
   let set_of_list lst =
     let len = List.length lst in
     let set = create ~n:len in

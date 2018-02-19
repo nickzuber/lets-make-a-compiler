@@ -17,6 +17,6 @@ let () =
   if (!Runner.unimplemented > 0) then Printf.printf "\n •\x1b[33m %d tests were unimplemented\x1b[39m" !Runner.unimplemented;
   (* Show failures *)
   if (!Runner.fail > 0) then Printf.printf "\n •\x1b[31m %d tests failed\x1b[39m" !Runner.fail;
-  Printf.printf "\n • Ran in %f seconds\n\n" ((Unix.gettimeofday ()) -. start);
+  Printf.printf "\n • Ran in %s seconds\n\n" (Time.format ((Unix.gettimeofday ()) -. start));
   (* Raise at very end if we're failing *)
   if (!Runner.fail > 0) then (raise Not_passing)

@@ -142,7 +142,7 @@ let print_matrix m =
              Array.iter (fun elem -> Printf.printf "%d " !elem) row;
              Printf.printf "│\n") m;
          Printf.printf "└%s┘\n" spacing));
-     if Settings.debug_mode then Printf.printf "\x1b[90m(naive) %fs\x1b[39m\n" !naive_interference_ts)
+     if Settings.debug_mode then Printf.printf "\x1b[90m(naive) %s\x1b[39m\n" (Time.format !naive_interference_ts))
 
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   let liveness_mapping = build_liveness_mapping instructions in

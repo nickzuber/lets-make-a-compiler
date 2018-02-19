@@ -2,6 +2,10 @@ open Ast
 open Ast.Assembly
 open Polyfill
 
+module rec Liveness_mapping : sig
+  type t = (Select.instruction, Select.arg Set.t) Hashtbl.t
+end = Liveness_mapping
+
 (* List of general purpose registers we can use to store variables. *)
 let valid_registers =
   [REGISTER "rcx";
@@ -51,7 +55,7 @@ let get_read_variables (instr : Select.instruction) : Select.arg Set.t =
       | Select.VARIABLE _ -> true
       | _ -> false) |> Set.set_of_list
 
-let build_liveness_mapping (instructions : Select.instruction list) : (Select.instruction, Select.arg Set.t) Hashtbl.t =
+let build_liveness_mapping (instructions : Select.instruction list) : Liveness_mapping.t =
   let variable_size = List.length instructions in
   let empty_liveness = Set.create ~n:0 in
   let mapping = Hashtbl.create variable_size in
@@ -102,8 +106,39 @@ let build_spilled_variable_to_offset_mapping (mapping : (string, Assembly.arg) H
   in assign_offset vars rsp_offset_starting_point;
   mapping
 
+let build_liveness_matrix (vars : string list) (mapping : Liveness_mapping.t) =
+  let n = List.length vars in
+  let vars_array = Array.of_list vars in
+  (* Create a matrix with unique references as elements. *)
+  let matrix = Array.init n (fun i -> Array.init n (fun i -> ref 0)) in
+  let rec loop u v =
+    (* Check for interference. *)
+    Hashtbl.iter (fun _instr liveness ->
+        let u_key = Select.VARIABLE vars_array.(u) in
+        let v_key = Select.VARIABLE vars_array.(v) in
+        if Set.exists liveness u_key && Set.exists liveness v_key && u <> v then
+          matrix.(u).(v) := !(matrix.(u).(v)) + 1) mapping;
+    if (v + 1) < n then
+      loop (u) (v + 1)
+    else if (u + 1) < n then
+      loop (u + 1) (0)
+  in loop 0 0;
+  matrix
+
+let print_matrix m =
+  if Settings.debug_mode <> true then () else
+    let spacing = String.make (Array.length m.(0) * 2 + 1) ' ' in
+    (Printf.printf "\n[\x1b[1mInterference Matrix\x1b[0m]\n┌%s┐\n" spacing;
+     Array.iter (fun row ->
+         Printf.printf "│ ";
+         Array.iter (fun elem -> Printf.printf "%d " !elem) row;
+         Printf.printf "│\n") m;
+     Printf.printf "└%s┘\n" spacing)
+
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   let liveness_mapping = build_liveness_mapping instructions in
+  let liveness_matrix = build_liveness_matrix vars liveness_mapping in
+  print_matrix liveness_matrix;
   (* Map as many variables to registers as we can *)
   let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in
   let spilled_variable_size = List.length unassigned_vars in

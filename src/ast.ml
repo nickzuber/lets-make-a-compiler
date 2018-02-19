@@ -36,14 +36,14 @@ module rec Select : sig
     | VARIABLE of string
     | REGISTER of string
   type instruction =
-    | ADDQ of arg * arg
-    | SUBQ of arg * arg
-    | MOVQ of arg * arg
-    | CALLQ of string  (* label *)
-    | NEGQ of arg
-    | RETQ of arg
-    | PUSHQ of arg
-    | POPQ of arg
+    | ADD of arg * arg
+    | SUB of arg * arg
+    | MOV of arg * arg
+    | CALL of string  (* label *)
+    | NEG of arg
+    | RET of arg
+    | PUSH of arg
+    | POP of arg
 end = Select
 
 module rec Assembly : sig

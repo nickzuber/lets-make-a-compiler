@@ -65,59 +65,59 @@ let pprint_diff = if Settings.use_verbose_tests then pprint_liveness_diff_verbos
 
 let test_class_example () = Ast.Select.(
     let actual =
-      [MOVQ ((INT 1), (VARIABLE "v"));
-       MOVQ ((INT 46), (VARIABLE "w"));
-       MOVQ ((VARIABLE "v"), (VARIABLE "x"));
-       ADDQ ((INT 7), (VARIABLE "x"));
-       MOVQ ((VARIABLE "x"), (VARIABLE "y"));
-       ADDQ ((INT 4), (VARIABLE "y"));
-       MOVQ ((VARIABLE "x"), (VARIABLE "z"));
-       ADDQ ((VARIABLE "w"), (VARIABLE "z"));
-       MOVQ ((VARIABLE "y"), (VARIABLE "t1"));
-       NEGQ (VARIABLE "t1");
-       MOVQ ((VARIABLE "z"), (VARIABLE "t2"));
-       ADDQ ((VARIABLE "t1"), (VARIABLE "t2"));
-       MOVQ ((VARIABLE "t2"), (REGISTER "rax"))] in
+      [MOV ((INT 1), (VARIABLE "v"));
+       MOV ((INT 46), (VARIABLE "w"));
+       MOV ((VARIABLE "v"), (VARIABLE "x"));
+       ADD ((INT 7), (VARIABLE "x"));
+       MOV ((VARIABLE "x"), (VARIABLE "y"));
+       ADD ((INT 4), (VARIABLE "y"));
+       MOV ((VARIABLE "x"), (VARIABLE "z"));
+       ADD ((VARIABLE "w"), (VARIABLE "z"));
+       MOV ((VARIABLE "y"), (VARIABLE "t1"));
+       NEG (VARIABLE "t1");
+       MOV ((VARIABLE "z"), (VARIABLE "t2"));
+       ADD ((VARIABLE "t1"), (VARIABLE "t2"));
+       MOV ((VARIABLE "t2"), (REGISTER "rax"))] in
     let actual_mapping = build_liveness_mapping actual in
     let expect_mapping = Hashtbl.create 13 in
     Hashtbl.add expect_mapping
-      (MOVQ ((INT 1), (VARIABLE "v")))
+      (MOV ((INT 1), (VARIABLE "v")))
       (Set.set_of_list []);
     Hashtbl.add expect_mapping
-      (MOVQ ((INT 46), (VARIABLE "w")))
+      (MOV ((INT 46), (VARIABLE "w")))
       (Set.set_of_list [VARIABLE "v"]);
     Hashtbl.add expect_mapping
-      (MOVQ ((VARIABLE "v"), (VARIABLE "x")))
+      (MOV ((VARIABLE "v"), (VARIABLE "x")))
       (Set.set_of_list [VARIABLE "w"; VARIABLE "v"]);
     Hashtbl.add expect_mapping
-      (ADDQ ((INT 7), (VARIABLE "x")))
+      (ADD ((INT 7), (VARIABLE "x")))
       (Set.set_of_list [VARIABLE "w"; VARIABLE "x";]);
     Hashtbl.add expect_mapping
-      (MOVQ ((VARIABLE "x"), (VARIABLE "y")))
+      (MOV ((VARIABLE "x"), (VARIABLE "y")))
       (Set.set_of_list [VARIABLE "w"; VARIABLE "x"]);
     Hashtbl.add expect_mapping
-      (ADDQ ((INT 4), (VARIABLE "y")))
+      (ADD ((INT 4), (VARIABLE "y")))
       (Set.set_of_list [VARIABLE "w"; VARIABLE "x"; VARIABLE "y"]);
     Hashtbl.add expect_mapping
-      (MOVQ ((VARIABLE "x"), (VARIABLE "z")))
+      (MOV ((VARIABLE "x"), (VARIABLE "z")))
       (Set.set_of_list [VARIABLE "w"; VARIABLE "x"; VARIABLE "y"]);
     Hashtbl.add expect_mapping
-      (ADDQ ((VARIABLE "w"), (VARIABLE "z")))
+      (ADD ((VARIABLE "w"), (VARIABLE "z")))
       (Set.set_of_list [VARIABLE "w"; VARIABLE "z"; VARIABLE "y"]);
     Hashtbl.add expect_mapping
-      (MOVQ ((VARIABLE "y"), (VARIABLE "t1")))
+      (MOV ((VARIABLE "y"), (VARIABLE "t1")))
       (Set.set_of_list [VARIABLE "z"; VARIABLE "y"]);
     Hashtbl.add expect_mapping
-      (NEGQ (VARIABLE "t1"))
+      (NEG (VARIABLE "t1"))
       (Set.set_of_list [VARIABLE "z"; VARIABLE "t1"]);
     Hashtbl.add expect_mapping
-      (MOVQ ((VARIABLE "z"), (VARIABLE "t2")))
+      (MOV ((VARIABLE "z"), (VARIABLE "t2")))
       (Set.set_of_list [VARIABLE "z"; VARIABLE "t1"]);
     Hashtbl.add expect_mapping
-      (ADDQ ((VARIABLE "t1"), (VARIABLE "t2")))
+      (ADD ((VARIABLE "t1"), (VARIABLE "t2")))
       (Set.set_of_list [VARIABLE "t2"; VARIABLE "t1"]);
     Hashtbl.add expect_mapping
-      (MOVQ ((VARIABLE "t2"), (REGISTER "rax")))
+      (MOV ((VARIABLE "t2"), (REGISTER "rax")))
       (Set.set_of_list [VARIABLE "t2"]);
     assert_equal actual_mapping expect_mapping ~pp_diff:pprint_diff ~cmp:compare_liveness_mappings
   )

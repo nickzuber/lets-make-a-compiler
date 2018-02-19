@@ -19,29 +19,49 @@ let valid_registers =
    REGISTER "r10";
    REGISTER "r11"]
 
+let caller_save_registers =
+  [REGISTER "rax";
+   REGISTER "rdx";
+   REGISTER "rcx";
+   REGISTER "rsi";
+   REGISTER "rdi";
+   REGISTER "r8";
+   REGISTER "r9";
+   REGISTER "r10";
+   REGISTER "r11"]
+
+let callee_save_registers =
+  [REGISTER "rsp";
+   REGISTER "rbp";
+   REGISTER "rbx";
+   REGISTER "r12";
+   REGISTER "r13";
+   REGISTER "r14";
+   REGISTER "r15"]
+
 (* Get the arguments that are considered for writes, regardless of being a variable or not. *)
 let get_write_args (instr : Select.instruction) : Select.arg list =
   match instr with
-  | Select.SUBQ (src, dest) -> [dest]
-  | Select.ADDQ (src, dest) -> [dest]
-  | Select.MOVQ (src, dest) -> [dest]
-  | Select.NEGQ (arg) -> [arg]
-  | Select.PUSHQ arg -> []
-  | Select.POPQ arg -> []
-  | Select.CALLQ label -> []
-  | Select.RETQ arg -> []
+  | Select.SUB (src, dest) -> [dest]
+  | Select.ADD (src, dest) -> [dest]
+  | Select.MOV (src, dest) -> [dest]
+  | Select.NEG (arg) -> [arg]
+  | Select.PUSH arg -> []
+  | Select.POP arg -> []
+  | Select.CALL label -> []
+  | Select.RET arg -> []
 
 (* Get the arguments that are considered for reads, regardless of being a variable or not. *)
 let get_read_args (instr : Select.instruction) : Select.arg list =
   match instr with
-  | Select.SUBQ (src, dest) -> [src; dest]
-  | Select.ADDQ (src, dest) -> [src; dest]
-  | Select.MOVQ (src, dest) -> [src]
-  | Select.NEGQ (arg) -> [arg]
-  | Select.PUSHQ arg -> []
-  | Select.POPQ arg -> []
-  | Select.CALLQ label -> []
-  | Select.RETQ arg -> []
+  | Select.SUB (src, dest) -> [src; dest]
+  | Select.ADD (src, dest) -> [src; dest]
+  | Select.MOV (src, dest) -> [src]
+  | Select.NEG (arg) -> [arg]
+  | Select.PUSH arg -> []
+  | Select.POP arg -> []
+  | Select.CALL label -> []
+  | Select.RET arg -> []
 
 (* Get the arguments that are considered for writes that are variables. *)
 let get_write_variables (instr : Select.instruction) : Select.arg Set.t =
@@ -148,7 +168,7 @@ let create (vars : string list) (instructions : Select.instruction list) : (stri
   let liveness_mapping = build_liveness_mapping instructions in
   let liveness_matrix = build_liveness_matrix_naive vars liveness_mapping in
   print_matrix liveness_matrix;
-  (* Map as many variables to registers as we can *)
+  (* Map as many variables to registers as we can. *)
   let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in
   let spilled_variable_size = List.length unassigned_vars in
   (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.

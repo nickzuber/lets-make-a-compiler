@@ -31,29 +31,29 @@ let fix_double_memory_references (instruction : Assembly.instruction) : Assembly
 
 let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =
   match instruction with
-  | Select.ADDQ (src, dest) ->
+  | Select.ADD (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     ADDQ (src', dest') |> fix_double_memory_references
-  | Select.SUBQ (src, dest) ->
+  | Select.SUB (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     SUBQ (src', dest') |> fix_double_memory_references
-  | Select.MOVQ (src, dest) ->
+  | Select.MOV (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     MOVQ (src', dest') |> fix_double_memory_references
-  | Select.CALLQ label -> [CALLQ label]
-  | Select.NEGQ src ->
+  | Select.CALL label -> [CALLQ label]
+  | Select.NEG src ->
     let src' = arg_of_select_arg mapping src in
     [NEGQ src']
-  | Select.RETQ src ->
+  | Select.RET src ->
     let src' = arg_of_select_arg mapping src in
     [RETQ src']
-  | Select.PUSHQ src ->
+  | Select.PUSH src ->
     let src' = arg_of_select_arg mapping src in
     [PUSHQ src']
-  | Select.POPQ src ->
+  | Select.POP src ->
     let src' = arg_of_select_arg mapping src in
     [POPQ src']
 
@@ -77,7 +77,7 @@ let transform (prog : program) : program =
          (SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp"))] in
       let instructions = assign mapping instructions in
       let prepare_return = (match final_instruction with
-          | Select.RETQ arg ->
+          | Select.RET arg ->
             let arg' = arg_of_select_arg mapping arg in
             [MOVQ (arg', REGISTER "rax");
              LEAVEQ;  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * spilled_variable_size), REGISTER "rsp")` *)

@@ -14,7 +14,7 @@ let test_int () =
       SelectProgram
         ([],
          [],
-         RETQ (INT 2))
+         RET (INT 2))
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
@@ -28,9 +28,9 @@ let test_read () =
   let expect = Ast.Select.(
       SelectProgram
         (["read_0"],
-         [CALLQ "_read_int";
-          MOVQ ((REGISTER "rax"), (VARIABLE "read_0"))],
-         RETQ (VARIABLE "read_0"))
+         [CALL "_read_int";
+          MOV ((REGISTER "rax"), (VARIABLE "read_0"))],
+         RET (VARIABLE "read_0"))
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
@@ -51,11 +51,11 @@ let test_binop1 () =
       SelectProgram
         (["read_1";
           "binary_expression_0"],
-         [CALLQ "_read_int";
-          MOVQ ((REGISTER "rax"), (VARIABLE "read_1"));
-          MOVQ ((VARIABLE "read_1"), (VARIABLE "binary_expression_0"));
-          ADDQ ((INT 2), (VARIABLE "binary_expression_0"))],
-         RETQ (VARIABLE "binary_expression_0"))
+         [CALL "_read_int";
+          MOV ((REGISTER "rax"), (VARIABLE "read_1"));
+          MOV ((VARIABLE "read_1"), (VARIABLE "binary_expression_0"));
+          ADD ((INT 2), (VARIABLE "binary_expression_0"))],
+         RET (VARIABLE "binary_expression_0"))
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 

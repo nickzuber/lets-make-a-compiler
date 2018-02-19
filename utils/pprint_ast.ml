@@ -106,37 +106,37 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
 
 and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
     match instruction with
-    | ADDQ (a, b) ->
+    | ADD (a, b) ->
       Printf.sprintf "%saddq %s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
-    | MOVQ (a, b) ->
+    | MOV (a, b) ->
       Printf.sprintf "%smovq %s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
-    | CALLQ l ->
+    | CALL l ->
       Printf.sprintf "%scallq %s"
         (build_offset padding)
         l
-    | NEGQ a ->
+    | NEG a ->
       Printf.sprintf "%snegq %s"
         (build_offset padding)
         (string_of_arg a)
-    | RETQ a ->
+    | RET a ->
       Printf.sprintf "%sretq %s"
         (build_offset padding)
         (string_of_arg a)
-    | PUSHQ a ->
+    | PUSH a ->
       Printf.sprintf "%spushq %s"
         (build_offset padding)
         (string_of_arg a)
-    | POPQ a ->
+    | POP a ->
       Printf.sprintf "%spopq %s"
         (build_offset padding)
         (string_of_arg a)
-    | SUBQ (a, b) ->
+    | SUB (a, b) ->
       Printf.sprintf "%ssubq %s, %s"
         (build_offset padding)
         (string_of_arg a)

@@ -4,4 +4,4 @@ S utils/**
 
 B _build/**
 
-PKG core batteries ounit
+PKG core batteries ounit emoji

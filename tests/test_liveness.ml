@@ -136,6 +136,7 @@ let test_custom () =
             assert_bool desc test) mapping) prog_tons_of_variables
   with
   | _ as e ->
+    (* If this test fails, we print all of the liveness mappings to debug. Kind of messy but does the trick. *)
     iter_select_instructions_of_program print_liveness_mapping prog_tons_of_variables;
     (raise e)
 

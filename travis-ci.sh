@@ -1,6 +1,6 @@
 
 # OPAM packages needed to build tests
-export OPAM_PACKAGES='ocamlfind core batteries ounit'
+export OPAM_PACKAGES='ocamlfind core batteries ounit emoji'
 
 ## basic OCaml and opam installation
 full_apt_version () {
@@ -149,8 +149,5 @@ opam --version
 # install packages from opam
 opam install -q -y ${OPAM_PACKAGES}
 
-
-# make infrared and run tests
-make
-make version
+# make and run tests
 make test

@@ -2,6 +2,8 @@ open Ast
 open Ast.Assembly
 open Polyfill
 
+let naive_interference_ts = ref 0.
+
 module rec Liveness_mapping : sig
   type t = (Select.instruction, Select.arg Set.t) Hashtbl.t
 end = Liveness_mapping
@@ -106,7 +108,8 @@ let build_spilled_variable_to_offset_mapping (mapping : (string, Assembly.arg) H
   in assign_offset vars rsp_offset_starting_point;
   mapping
 
-let build_liveness_matrix (vars : string list) (mapping : Liveness_mapping.t) =
+let build_liveness_matrix_naive (vars : string list) (mapping : Liveness_mapping.t) =
+  let start = Unix.gettimeofday () in
   let n = List.length vars in
   let vars_array = Array.of_list vars in
   (* Create a matrix with unique references as elements. *)
@@ -123,21 +126,27 @@ let build_liveness_matrix (vars : string list) (mapping : Liveness_mapping.t) =
     else if (u + 1) < n then
       loop (u + 1) (0)
   in loop 0 0;
+  naive_interference_ts := ((Unix.gettimeofday ()) -. start);
   matrix
 
 let print_matrix m =
   if Settings.debug_mode <> true then () else
-    let spacing = String.make (Array.length m.(0) * 2 + 1) ' ' in
-    (Printf.printf "\n[\x1b[1mInterference Matrix\x1b[0m]\n┌%s┐\n" spacing;
-     Array.iter (fun row ->
-         Printf.printf "│ ";
-         Array.iter (fun elem -> Printf.printf "%d " !elem) row;
-         Printf.printf "│\n") m;
-     Printf.printf "└%s┘\n" spacing)
+    (Printf.printf "\n[\x1b[1mInterference Matrix\x1b[0m]";
+     if Array.length m.(0) > 100 then
+       print_endline "\nToo long to show."
+     else
+       (let spacing = String.make (Array.length m.(0) * 2 + 1) ' ' in
+        (Printf.printf "\n┌%s┐\n" spacing;
+         Array.iter (fun row ->
+             Printf.printf "│ ";
+             Array.iter (fun elem -> Printf.printf "%d " !elem) row;
+             Printf.printf "│\n") m;
+         Printf.printf "└%s┘\n" spacing));
+     if Settings.debug_mode then Printf.printf "\x1b[90m(naive) %fs\x1b[39m\n" !naive_interference_ts)
 
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   let liveness_mapping = build_liveness_mapping instructions in
-  let liveness_matrix = build_liveness_matrix vars liveness_mapping in
+  let liveness_matrix = build_liveness_matrix_naive vars liveness_mapping in
   print_matrix liveness_matrix;
   (* Map as many variables to registers as we can *)
   let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in

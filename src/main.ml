@@ -19,7 +19,7 @@ let prog = Program
         (Int 1)))
 
 let prog_tons_of_variables = Program
-    (pow2 3)
+    (pow2 13)
 
 let _ =
   try

@@ -4,4 +4,4 @@ S utils/**
 
 B _build/**
 
-PKG core batteries ounit emoji
+PKG core batteries ounit ocamlgraph

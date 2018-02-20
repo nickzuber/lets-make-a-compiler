@@ -256,3 +256,70 @@ let create_title title : string =
   let amt_of_dashes = 35 - (title_len / 2) in
   let end_dashes = make_dashes amt_of_dashes in
   Printf.sprintf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m%s\x1b[39m %s" title end_dashes Emoji.herb
+
+let print_matrix m ts=
+  Printf.printf "\n[\x1b[1mInterference Matrix\x1b[0m]";
+  if Array.length m.(0) > 100 then
+    print_endline "\nToo long to show."
+  else
+    (let spacing = String.make (Array.length m.(0) * 2 + 1) ' ' in
+     (Printf.printf "\n┌%s┐\n" spacing;
+      Array.iter (fun row ->
+          Printf.printf "│ ";
+          Array.iter (fun elem -> Printf.printf "%d " !elem) row;
+          Printf.printf "│\n") m;
+      Printf.printf "└%s┘\n" spacing));
+  Printf.printf "\x1b[90m(naive) %s\x1b[39m\n" (Time.format ts)
+
+let print_string_of_graph g ts = Polyfill.(
+    let i = ref 0 in
+    let colors =
+      [|"\x1b[31m";
+        "\x1b[32m";
+        "\x1b[33m";
+        "\x1b[34m";
+        "\x1b[35m";
+        "\x1b[91m";
+        "\x1b[92m";
+        "\x1b[93m";
+        "\x1b[94m";
+        "\x1b[95m";
+        "\x1b[41m";
+        "\x1b[42m";
+        "\x1b[44m";
+        "\x1b[45m";
+        "\x1b[101m";
+        "\x1b[102m";
+        "\x1b[104m";
+        "\x1b[105m";
+        "\x1b[90m"|] in
+    let tbl = Hashtbl.create (Array.length colors) in
+    InterferenceGraph.G.iter_edges (fun v1 v2 ->
+        let l1 = string_of_arg (InterferenceGraph.G.V.label v1)
+        and l2 = string_of_arg (InterferenceGraph.G.V.label v2) in
+        let color1 =
+          try Hashtbl.find tbl l1 with | Not_found ->
+            (if !i < (Array.length colors) then
+               (let c = colors.(!i) in
+                i := !i + 1;
+                Hashtbl.add tbl l1 c;
+                c)
+             else
+               "")
+        and color2 = try Hashtbl.find tbl l2 with | Not_found ->
+          (if !i < (Array.length colors) then
+             (let c = colors.(!i) in
+              i := !i + 1;
+              Hashtbl.add tbl l2 c;
+              c)
+           else
+             "") in
+        Printf.printf "%s%s\x1b[39;49m <-> %s%s\x1b[39;49m\n" color1 l1 color2 l2) g)
+
+let print_graph g n ts = Polyfill.(
+    Printf.printf "\n[\x1b[1mInterference Graph Edges\x1b[0m]\n";
+    if n > 50 then
+      print_endline "Too long to show."
+    else
+      (print_string_of_graph g ts);
+    Printf.printf "\x1b[90m(graph) %s\x1b[39m\n" (Time.format ts))

@@ -2,7 +2,10 @@ open Ast
 open Ast.Assembly
 open Polyfill
 
+module Bfs = InterferenceGraph.Bfs
+
 let naive_interference_ts = ref 0.
+let graph_interference_ts = ref 0.
 
 module rec Liveness_mapping : sig
   type t = (Select.instruction, Select.arg Set.t) Hashtbl.t
@@ -79,7 +82,7 @@ let get_read_variables (instr : Select.instruction) : Select.arg Set.t =
 
 let build_liveness_mapping (instructions : Select.instruction list) : Liveness_mapping.t =
   let variable_size = List.length instructions in
-  let empty_liveness = Set.create ~n:0 in
+  let empty_liveness = Set.create 0 in
   let mapping = Hashtbl.create variable_size in
   let rec assign instrs previous_liveness : unit =
     match instrs with
@@ -149,25 +152,38 @@ let build_liveness_matrix_naive (vars : string list) (mapping : Liveness_mapping
   naive_interference_ts := ((Unix.gettimeofday ()) -. start);
   matrix
 
-let print_matrix m =
-  if Settings.debug_mode <> true then () else
-    (Printf.printf "\n[\x1b[1mInterference Matrix\x1b[0m]";
-     if Array.length m.(0) > 100 then
-       print_endline "\nToo long to show."
-     else
-       (let spacing = String.make (Array.length m.(0) * 2 + 1) ' ' in
-        (Printf.printf "\n┌%s┐\n" spacing;
-         Array.iter (fun row ->
-             Printf.printf "│ ";
-             Array.iter (fun elem -> Printf.printf "%d " !elem) row;
-             Printf.printf "│\n") m;
-         Printf.printf "└%s┘\n" spacing));
-     if Settings.debug_mode then Printf.printf "\x1b[90m(naive) %s\x1b[39m\n" (Time.format !naive_interference_ts))
+let attempt_to_add_edge liveness args d graph vt =
+  Set.for_each liveness (fun v ->
+      let should_add_edge = List.for_all (fun arg -> arg <> v) args in
+      if should_add_edge then
+        (let v' = Hashtbl.find vt v and d' = Hashtbl.find vt d in
+         InterferenceGraph.G.add_edge graph d' v'))
+
+let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) =
+  let start = Unix.gettimeofday () in
+  let vars' = List.map (fun var -> Select.VARIABLE var) vars in
+  let (graph, vt) = InterferenceGraph.init vars' in
+  Hashtbl.iter (fun instr liveness ->
+      match instr with
+      | Select.PUSH d -> attempt_to_add_edge liveness [d] d graph vt
+      | Select.POP s -> attempt_to_add_edge liveness [s] s graph vt
+      | Select.MOV (s, d) -> attempt_to_add_edge liveness [s; d] d graph vt
+      | Select.ADD (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
+      | Select.SUB (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
+      | Select.NEG d -> attempt_to_add_edge liveness [d] d graph vt
+      | Select.RET d -> ()
+      | Select.CALL label -> ()) mapping;
+  graph_interference_ts := ((Unix.gettimeofday ()) -. start);
+  graph
 
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   let liveness_mapping = build_liveness_mapping instructions in
-  let liveness_matrix = build_liveness_matrix_naive vars liveness_mapping in
-  print_matrix liveness_matrix;
+  if Settings.compute_liveness_matrix then
+    (let liveness_matrix = build_liveness_matrix_naive vars liveness_mapping in
+     Pprint_ast.print_matrix liveness_matrix !naive_interference_ts);
+  let liveness_graph = build_liveness_graph vars liveness_mapping in
+  if Settings.debug_mode <> true then () else
+    Pprint_ast.print_graph liveness_graph (List.length vars) !graph_interference_ts;
   (* Map as many variables to registers as we can. *)
   let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in
   let spilled_variable_size = List.length unassigned_vars in

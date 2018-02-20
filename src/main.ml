@@ -19,7 +19,7 @@ let prog = Program
         (Int 1)))
 
 let prog_tons_of_variables = Program
-    (pow2 3)
+    (pow2 4)
 
 let _ =
   try
@@ -34,6 +34,7 @@ let _ =
     let msg = "variable \x1b[33m" ^ name ^ "\x1b[39m was referenced out of scope." in
     display_error "Illegal_variable_reference" msg
     |> print_endline
-  | _ ->
+  | _ as e ->
     display_error "Unknown_error" "Caught an unhandled error"
-    |> print_endline
+    |> print_endline;
+    (raise e)

@@ -1,0 +1,2 @@
+
+let herb = "\xF0\x9F\x8C\xBF"

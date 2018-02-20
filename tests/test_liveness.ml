@@ -119,8 +119,7 @@ let test_class_example () = Ast.Select.(
     Hashtbl.add expect_mapping
       (MOV ((VARIABLE "t2"), (REGISTER "rax")))
       (Set.set_of_list [VARIABLE "t2"]);
-    assert_equal actual_mapping expect_mapping ~pp_diff:pprint_diff ~cmp:compare_liveness_mappings
-  )
+    assert_equal actual_mapping expect_mapping ~pp_diff:pprint_diff ~cmp:compare_liveness_mappings)
 
 let test_custom () =
   try
@@ -140,8 +139,42 @@ let test_custom () =
     iter_select_instructions_of_program print_liveness_mapping prog_tons_of_variables;
     (raise e)
 
+let test_interference_graph () = Ast.Select.(
+    let vars =
+      ["v";
+       "w";
+       "x";
+       "y";
+       "z";
+       "t1";
+       "t2"] in
+    let actual =
+      [MOV ((INT 1), (VARIABLE "v"));
+       MOV ((INT 46), (VARIABLE "w"));
+       MOV ((VARIABLE "v"), (VARIABLE "x"));
+       ADD ((INT 7), (VARIABLE "x"));
+       MOV ((VARIABLE "x"), (VARIABLE "y"));
+       ADD ((INT 4), (VARIABLE "y"));
+       MOV ((VARIABLE "x"), (VARIABLE "z"));
+       ADD ((VARIABLE "w"), (VARIABLE "z"));
+       MOV ((VARIABLE "y"), (VARIABLE "t1"));
+       NEG (VARIABLE "t1");
+       MOV ((VARIABLE "z"), (VARIABLE "t2"));
+       ADD ((VARIABLE "t1"), (VARIABLE "t2"));
+       MOV ((VARIABLE "t2"), (REGISTER "rax"))] in
+    let liveness_mapping = build_liveness_mapping actual in
+    let liveness_graph = build_liveness_graph vars liveness_mapping in
+    try
+      (* not sure best way to do these tests yet *)
+      assert_equal 1 1
+    with
+    | _ as e ->
+      print_endline "";
+      print_string_of_graph liveness_graph (List.length vars);
+      (raise e))
+
 let main () = Runner.(
     print_endline ("\n[\x1b[1mliveness\x1b[0m]");
     run test_class_example "class example" "";
     run test_custom "many vars, low overlap" "Should be small";
-  )
+    run test_interference_graph "interference graph" "")

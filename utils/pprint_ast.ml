@@ -298,22 +298,25 @@ let print_string_of_graph g ts = Polyfill.(
         let l1 = string_of_arg (InterferenceGraph.G.V.label v1)
         and l2 = string_of_arg (InterferenceGraph.G.V.label v2) in
         let color1 =
-          try Hashtbl.find tbl l1 with | Not_found ->
-            (if !i < (Array.length colors) then
-               (let c = colors.(!i) in
-                i := !i + 1;
-                Hashtbl.add tbl l1 c;
-                c)
-             else
-               "")
-        and color2 = try Hashtbl.find tbl l2 with | Not_found ->
-          (if !i < (Array.length colors) then
-             (let c = colors.(!i) in
-              i := !i + 1;
-              Hashtbl.add tbl l2 c;
-              c)
-           else
-             "") in
+          if Settings.use_color_coded_graph = false then "" else
+            (try Hashtbl.find tbl l1 with | Not_found ->
+               (if !i < (Array.length colors) then
+                  (let c = colors.(!i) in
+                   i := !i + 1;
+                   Hashtbl.add tbl l1 c;
+                   c)
+                else
+                  ""))
+        and color2 =
+          if Settings.use_color_coded_graph = false then "" else
+            (try Hashtbl.find tbl l2 with | Not_found ->
+               (if !i < (Array.length colors) then
+                  (let c = colors.(!i) in
+                   i := !i + 1;
+                   Hashtbl.add tbl l2 c;
+                   c)
+                else
+                  "")) in
         Printf.printf "%s%s\x1b[39;49m <-> %s%s\x1b[39;49m\n" color1 l1 color2 l2) g)
 
 let print_graph g n ts = Polyfill.(

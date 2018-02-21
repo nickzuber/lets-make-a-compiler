@@ -166,7 +166,7 @@ let test_interference_graph () = Ast.Select.(
     let liveness_graph = build_liveness_graph vars liveness_mapping in
     try
       (* not sure best way to do these tests yet *)
-      assert_equal 1 1
+      assert_equal 1 2
     with
     | _ as e ->
       print_endline "";

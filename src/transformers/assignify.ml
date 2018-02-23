@@ -68,6 +68,7 @@ let rec assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Sele
 let transform (prog : program) : program =
   let instructions = match prog with
     | SelectProgram (vars, instructions, final_instruction) ->
+      (* The spilled variable size is used for offsetting the stack pointer. *)
       let mapping, spilled_variable_size = Mapping.create vars instructions in
       let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
       (* Push stack pointer down far enough to store a variable in each memory location. *)

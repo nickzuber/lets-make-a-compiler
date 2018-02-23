@@ -5,7 +5,7 @@ let debug_mode = true
 (* Decide if we bother to compute the liveness matrix. We don't need to since we use a graph instead,
    but having the matrix could be a good benchmark to see how efficient we're being in our graph relatively.
    WARNING: It's super slow for very large programs. Example, it will take ~4 months to compute a `pow2 13` program. *)
-let compute_liveness_matrix = true
+let compute_liveness_matrix = false
 
 (* For the graph output to the terminal, use colors to easily identify variables at a glance. *)
 let use_color_coded_graph = true

@@ -4,4 +4,4 @@ S utils/**
 
 B _build/**
 
-PKG core batteries ounit ocamlgraph
+PKG core batteries ounit ocamlgraph bheap

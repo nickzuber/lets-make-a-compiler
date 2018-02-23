@@ -294,9 +294,9 @@ let print_string_of_graph g ts = Polyfill.(
         "\x1b[105m";
         "\x1b[90m"|] in
     let tbl = Hashtbl.create (Array.length colors) in
-    InterferenceGraph.G.iter_edges (fun v1 v2 ->
-        let l1 = string_of_arg (InterferenceGraph.G.V.label v1)
-        and l2 = string_of_arg (InterferenceGraph.G.V.label v2) in
+    Interference_graph.G.iter_edges (fun v1 v2 ->
+        let l1 = string_of_arg (Interference_graph.G.V.label v1)
+        and l2 = string_of_arg (Interference_graph.G.V.label v2) in
         let color1 =
           if Settings.use_color_coded_graph = false then "" else
             (try Hashtbl.find tbl l1 with | Not_found ->

@@ -16,10 +16,10 @@ let prog = Program
     (BinaryExpression
        (Plus,
         (Read),
-        (Int 1)))
+        (pow2 5)))
 
 let prog_tons_of_variables = Program
-    (pow2 4)
+    (pow2 7)
 
 let _ =
   try

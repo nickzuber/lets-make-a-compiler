@@ -2,7 +2,7 @@ open Ast
 open Ast.Assembly
 open Polyfill
 
-module Bfs = InterferenceGraph.Bfs
+module Bfs = Interference_graph.Bfs
 
 let naive_interference_ts = ref 0.
 let graph_interference_ts = ref 0.
@@ -11,16 +11,17 @@ module rec Liveness_mapping : sig
   type t = (Select.instruction, Select.arg Set.t) Hashtbl.t
 end = Liveness_mapping
 
-(* List of general purpose registers we can use to store variables. *)
-let valid_registers =
-  [REGISTER "rcx";
-   REGISTER "rdx";
-   REGISTER "rsi";
-   REGISTER "rdi";
-   REGISTER "r8";
-   REGISTER "r9";
-   REGISTER "r10";
-   REGISTER "r11"]
+(* Mapping of int to general purpose registers. *)
+let int_to_valid_register = Hashtbl.create 8
+let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
+    [(0, REGISTER "rcx");
+     (1, REGISTER "rdx");
+     (2, REGISTER "rsi");
+     (3, REGISTER "rdi");
+     (4, REGISTER "r8");
+     (5, REGISTER "r9");
+     (6, REGISTER "r10");
+     (7, REGISTER "r11")]
 
 let caller_save_registers =
   [REGISTER "rax";
@@ -99,39 +100,36 @@ let build_liveness_mapping (instructions : Select.instruction list) : Liveness_m
   assign reversed_instructions empty_liveness;
   mapping
 
+let register_of_variable (var : Select.arg) spill_size coloring : Assembly.arg =
+  let i = Hashtbl.find coloring var in
+  try
+    (* Use a register. *)
+    Hashtbl.find int_to_valid_register i
+  with
+    Not_found ->
+    (* Use main memory. *)
+    let starting_point = i - (Hashtbl.length int_to_valid_register) in
+    (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
+       https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
+    let rsp_offset = if spill_size mod 2 = 0 then 1 else 2 in
+    let offset = ((starting_point + rsp_offset) * -8) in
+    let rsp_register_with_offset = REFERENCE ("rbp", offset) in
+    rsp_register_with_offset
+
 (* Create a mapping from variables to registers, then return the leftover variables and the mapping. *)
-let build_variable_to_register_mapping (vars : string list) : string list * (string, Assembly.arg) Hashtbl.t =
+let build_variable_to_register_mapping (vars : string list) (coloring : (Select.arg, int) Hashtbl.t) : (string, Assembly.arg) Hashtbl.t * int =
   let variable_size = List.length vars in
+  (* How many variables we can't fit in registers. *)
+  let spill_size = (Hashtbl.length int_to_valid_register) - variable_size in
   let mapping = Hashtbl.create variable_size in
   (* Assign registers to variables and return the list of unassigned variables. *)
-  let rec assign vars regs : string list =
-    match (vars, regs) with
-    | ([], _) -> []
-    | (unassigned_vars, []) -> unassigned_vars
-    | (var :: rest_of_vars, reg :: rest_of_regs) ->
-      Hashtbl.add mapping var reg;
-      assign rest_of_vars rest_of_regs in
-  let unassigned_variables = assign vars valid_registers in
-  (unassigned_variables, mapping)
+  List.iter (fun name ->
+      let v = Select.VARIABLE name in
+      let reg = register_of_variable v spill_size coloring in
+      Hashtbl.add mapping name reg) vars;
+  (mapping, spill_size)
 
-(* Create a mapping of spilled variable to locations in memory off the stack base pointer. *)
-let build_spilled_variable_to_offset_mapping (mapping : (string, Assembly.arg) Hashtbl.t) (vars : string list) : (string, Assembly.arg) Hashtbl.t =
-  let spilled_variable_size = List.length vars in
-  (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
-     https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
-  let rsp_offset_starting_point = if spilled_variable_size mod 2 = 0 then 1 else 2 in
-  let rec assign_offset vars i =
-    match vars with
-    | [] -> ()
-    | var :: rest ->
-      let offset = (i * -8) in
-      let rsp_register_with_offset = REFERENCE ("rbp", offset) in
-      Hashtbl.add mapping var rsp_register_with_offset;
-      assign_offset rest (i + 1)
-  in assign_offset vars rsp_offset_starting_point;
-  mapping
-
-let build_liveness_matrix_naive (vars : string list) (mapping : Liveness_mapping.t) =
+let build_liveness_matrix (vars : string list) (mapping : Liveness_mapping.t) =
   let start = Unix.gettimeofday () in
   let n = List.length vars in
   let vars_array = Array.of_list vars in
@@ -157,12 +155,12 @@ let attempt_to_add_edge liveness args d graph vt =
       let should_add_edge = List.for_all (fun arg -> arg <> v) args in
       if should_add_edge then
         (let v' = Hashtbl.find vt v and d' = Hashtbl.find vt d in
-         InterferenceGraph.G.add_edge graph d' v'))
+         Interference_graph.G.add_edge graph d' v'))
 
-let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) =
+let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : Interference_graph.G.t =
   let start = Unix.gettimeofday () in
   let vars' = List.map (fun var -> Select.VARIABLE var) vars in
-  let (graph, vt) = InterferenceGraph.init vars' in
+  let (graph, vt) = Interference_graph.init vars' in
   Hashtbl.iter (fun instr liveness ->
       match instr with
       | Select.PUSH d -> attempt_to_add_edge liveness [d] d graph vt
@@ -176,19 +174,75 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) =
   graph_interference_ts := ((Unix.gettimeofday ()) -. start);
   graph
 
+(* From a hashmap of variables to saturation sets, find the variable with the highest saturation. *)
+let get_variable_with_max_saturation (var_to_sat_and_adj : (Select.arg, int Set.t * Select.arg Set.t) Hashtbl.t) : Select.arg * (int Set.t * Select.arg Set.t) =
+  let maybe_max = Hashtbl.fold (fun k v prev ->
+      match prev with
+      | Some (k', (sat', adj')) ->
+        (let (sat, adj) = v in
+         let size_v' = Set.size sat' in
+         let size_v = Set.size sat in
+         if size_v > size_v' then Some (k, v) else Some (k', (sat', adj')))
+      | None -> Some (k, v)) var_to_sat_and_adj None in
+  match maybe_max with
+  | Some (k, v) -> (k, v)
+  | None -> (raise Not_found)
+
+(* Given a set, find the lowest positive integer that is not an element of the set. *)
+let find_lowest_num_not_in_set set : int =
+  let rec loop i =
+    if Set.exists set i then loop (i + 1) else i
+  in
+  loop 0
+
+(* Given an interference graph, return a mapping of ints to variables. *)
+let saturate (graph : Interference_graph.G.t) : (Select.arg, int) Hashtbl.t =
+  let var_to_sat_and_adj = Hashtbl.create 53 in
+  let coloring = Hashtbl.create 53 in
+  (* Load up the map with variables mapped to empty satuation sets. *)
+  let rec loop it =
+    let v = Bfs.get it in
+    let var = Interference_graph.G.V.label v in
+    let sat = Set.create 53 in
+    let v_adj_list = Interference_graph.G.pred graph v in
+    let adj_list = List.map (fun v -> Interference_graph.G.V.label v) v_adj_list in
+    let adj = Set.set_of_list adj_list in
+    Hashtbl.add var_to_sat_and_adj var (sat, adj);
+    loop (Bfs.step it)
+  in
+  (try loop (Bfs.start graph) with Exit -> ());
+  (* Create a copy of our var to sat/adj map so we can remove elements we've seen without
+   * actually damaging the integrity of the original mapping. *)
+  let vertices = Hashtbl.copy var_to_sat_and_adj in
+  (* Saturation algorithm *)
+  while Hashtbl.length vertices > 0 do
+    let (var, (_, adj)) = get_variable_with_max_saturation vertices in
+    (* We need to get the saturation from the original mapping, not the one we're messing with. *)
+    let (sat, _) = Hashtbl.find var_to_sat_and_adj var in
+    let color = find_lowest_num_not_in_set sat in
+    Hashtbl.add coloring var color;
+    (* Adjust the saturation of the adjacent vertices. *)
+    Set.for_each adj (fun v ->
+        let (sat, _adj) = Hashtbl.find var_to_sat_and_adj v in
+        Set.add sat color);
+    Hashtbl.remove vertices var
+  done;
+  coloring
+
+(* Create a mapping between variable names (strings) to registers (memory offsets are included).
+ * This is used by assign to turn our Select program into an Assembly program. *)
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   let liveness_mapping = build_liveness_mapping instructions in
-  if Settings.compute_liveness_matrix then
-    (let liveness_matrix = build_liveness_matrix_naive vars liveness_mapping in
-     Pprint_ast.print_matrix liveness_matrix !naive_interference_ts);
   let liveness_graph = build_liveness_graph vars liveness_mapping in
-  if Settings.debug_mode <> true then () else
-    Pprint_ast.print_graph liveness_graph (List.length vars) !graph_interference_ts;
-  (* Map as many variables to registers as we can. *)
-  let unassigned_vars, unfinished_mapping = build_variable_to_register_mapping vars in
-  let spilled_variable_size = List.length unassigned_vars in
+  let coloring = saturate liveness_graph in
   (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
      https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
   (* Map the rest of the variables to memory *)
-  let mapping = build_spilled_variable_to_offset_mapping unfinished_mapping unassigned_vars in
-  (mapping, spilled_variable_size)
+  let mapping, spill_size = build_variable_to_register_mapping vars coloring in
+  (* [DEBUG] Used just for debugging. *)
+  if Settings.compute_liveness_matrix then
+    (let liveness_matrix = build_liveness_matrix vars liveness_mapping in
+     Pprint_ast.print_matrix liveness_matrix !naive_interference_ts);
+  if Settings.debug_mode = false then () else
+    Pprint_ast.print_graph liveness_graph (List.length vars) !graph_interference_ts;
+  (mapping, spill_size)

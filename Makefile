@@ -1,4 +1,4 @@
-OCB_FLAGS = -use-ocamlfind -pkg core,batteries,ounit,ocamlgraph -tags thread -no-hygiene
+OCB_FLAGS = -use-ocamlfind -pkg core,batteries,ounit,ocamlgraph,bheap -tags thread -no-hygiene
 OCB =       ocamlbuild $(OCB_FLAGS)
 
 MODULES = src \

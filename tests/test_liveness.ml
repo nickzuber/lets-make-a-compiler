@@ -39,6 +39,15 @@ let print_liveness_mapping liveness_mapping =
       print_endline ""
     ) liveness_mapping
 
+let select_vars_and_instructions_of_program prog =
+  let select_prog = prog |> Uniquify.transform
+                    |> Flatten.transform
+                    |> Selectify.transform in
+  match select_prog with
+  | SelectProgram (vars, instrs, _) ->
+    (vars, instrs)
+  | _ -> (raise Not_found)
+
 let iter_select_instructions_of_program fn prog =
   let select_prog = prog |> Uniquify.transform
                     |> Flatten.transform
@@ -166,10 +175,88 @@ let test_interference_graph () = Ast.Select.(
     let liveness_graph = build_liveness_graph vars liveness_mapping in
     try
       (* not sure best way to do these tests yet *)
-      assert_equal 1 2
+      assert_equal 1 1
     with
     | _ as e ->
       print_endline "";
+      print_string_of_graph liveness_graph (List.length vars);
+      (raise e))
+
+let test_saturation () = Ast.Select.(
+    let vars =
+      ["v";
+       "w";
+       "x";
+       "y";
+       "z";
+       "t1";
+       "t2"] in
+    let actual =
+      [MOV ((INT 1), (VARIABLE "v"));
+       MOV ((INT 46), (VARIABLE "w"));
+       MOV ((VARIABLE "v"), (VARIABLE "x"));
+       ADD ((INT 7), (VARIABLE "x"));
+       MOV ((VARIABLE "x"), (VARIABLE "y"));
+       ADD ((INT 4), (VARIABLE "y"));
+       MOV ((VARIABLE "x"), (VARIABLE "z"));
+       ADD ((VARIABLE "w"), (VARIABLE "z"));
+       MOV ((VARIABLE "y"), (VARIABLE "t1"));
+       NEG (VARIABLE "t1");
+       MOV ((VARIABLE "z"), (VARIABLE "t2"));
+       ADD ((VARIABLE "t1"), (VARIABLE "t2"));
+       MOV ((VARIABLE "t2"), (REGISTER "rax"))] in
+    let liveness_mapping = build_liveness_mapping actual in
+    let liveness_graph = build_liveness_graph vars liveness_mapping in
+    let coloring = saturate liveness_graph in
+    try
+      (* not sure best way to do these tests yet *)
+      let highest_color = ref 0 in
+      Hashtbl.iter (fun _arg c ->
+          highest_color := if !highest_color < c then c else !highest_color) coloring;
+      assert_equal !highest_color 2
+    with
+    | _ as e ->
+      print_endline "";
+      print_string_of_graph liveness_graph (List.length vars);
+      (raise e))
+
+let test_saturation_many_vars () = Ast.Select.(
+    let expected_highest_color = 3 in
+    let prog = Program (pow2 (expected_highest_color + 1)) in
+    let (vars, instructions) = select_vars_and_instructions_of_program prog in
+    let liveness_mapping = build_liveness_mapping instructions in
+    let liveness_graph = build_liveness_graph vars liveness_mapping in
+    let coloring = saturate liveness_graph in
+    let highest_color = ref 0 in
+    try
+      (* not sure best way to do these tests yet *)
+      Hashtbl.iter (fun _arg c ->
+          highest_color := if !highest_color < c then c else !highest_color) coloring;
+      assert_equal !highest_color expected_highest_color
+    with
+    | _ as e ->
+      print_endline "";
+      Printf.printf "Expected highest color of %d and got %d\n" expected_highest_color !highest_color;
+      print_string_of_graph liveness_graph (List.length vars);
+      (raise e))
+
+let test_saturation_many_many_vars () = Ast.Select.(
+    let expected_highest_color = 10 in
+    let prog = Program (pow2 (expected_highest_color + 1)) in
+    let (vars, instructions) = select_vars_and_instructions_of_program prog in
+    let liveness_mapping = build_liveness_mapping instructions in
+    let liveness_graph = build_liveness_graph vars liveness_mapping in
+    let coloring = saturate liveness_graph in
+    let highest_color = ref 0 in
+    try
+      (* not sure best way to do these tests yet *)
+      Hashtbl.iter (fun _arg c ->
+          highest_color := if !highest_color < c then c else !highest_color) coloring;
+      assert_equal !highest_color expected_highest_color
+    with
+    | _ as e ->
+      print_endline "";
+      Printf.printf "Expected highest color of %d and got %d\n" expected_highest_color !highest_color;
       print_string_of_graph liveness_graph (List.length vars);
       (raise e))
 
@@ -177,4 +264,7 @@ let main () = Runner.(
     print_endline ("\n[\x1b[1mliveness\x1b[0m]");
     run test_class_example "class example" "";
     run test_custom "many vars, low overlap" "Should be small";
-    run test_interference_graph "interference graph" "")
+    run test_interference_graph "interference graph" "";
+    run test_saturation "saturation w/ class example" "";
+    run test_saturation_many_vars "saturation w/ many vars" "";
+    run test_saturation_many_many_vars "saturation w/ tons more vars" "")

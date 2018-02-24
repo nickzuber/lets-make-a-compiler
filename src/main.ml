@@ -13,17 +13,29 @@ let rec pow2 n =
         (pow2 (n - 1))))
 
 let prog = Program
+    (LetExpression
+       ("y",
+        (LetExpression
+           ("x",
+            (Int 0),
+            (Variable "x"))),
+        (BinaryExpression
+           (Plus,
+            (Read),
+            (Variable "y")))))
+
+let prog2 = Program
     (BinaryExpression
        (Plus,
         (Read),
-        (pow2 5)))
+        (pow2 9)))
 
 let prog_tons_of_variables = Program
-    (pow2 7)
+    (pow2 2)
 
 let _ =
   try
-    let prog' = prog_tons_of_variables in
+    let prog' = prog2 in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

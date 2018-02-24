@@ -241,6 +241,7 @@ let test_saturation_many_vars () = Ast.Select.(
       (raise e))
 
 let test_saturation_many_many_vars () = Ast.Select.(
+    (* When we have a `pow2 n` program, the highest color should be `n-1` *)
     let expected_highest_color = 10 in
     let prog = Program (pow2 (expected_highest_color + 1)) in
     let (vars, instructions) = select_vars_and_instructions_of_program prog in
@@ -265,6 +266,6 @@ let main () = Runner.(
     run test_class_example "class example" "";
     run test_custom "many vars, low overlap" "Should be small";
     run test_interference_graph "interference graph" "";
-    run test_saturation "saturation w/ class example" "";
-    run test_saturation_many_vars "saturation w/ many vars" "";
-    run test_saturation_many_many_vars "saturation w/ tons more vars" "")
+    run test_saturation "saturation, class example" "";
+    run test_saturation_many_vars "saturation, many vars" "";
+    run test_saturation_many_many_vars "saturation, tons more vars" "")

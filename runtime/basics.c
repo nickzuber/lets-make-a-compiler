@@ -2,23 +2,23 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void print_int(int64_t x)
+void print_int(int x)
 {
-  printf("%lld\n", x);
+  printf("%d\n", x);
 }
 
-int64_t read_int()
+int read_int()
 {
-  int64_t x = 0;
-  scanf("%lld", &x);
+  int x = 0;
+  scanf("%d", &x);
   return x;
 }
 
-extern int64_t asm_main();
+extern int asm_main();
 
 int main()
 {
-  int64_t ans = asm_main();
+  int ans = asm_main();
   print_int(ans);
   return 0;
 }

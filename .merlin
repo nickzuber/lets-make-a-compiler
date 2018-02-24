@@ -1,5 +1,5 @@
 S src/**
-S test/**
+S tests/**
 S utils/**
 
 B _build/**

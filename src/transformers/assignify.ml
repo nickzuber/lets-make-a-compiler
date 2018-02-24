@@ -43,7 +43,28 @@ let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (inst
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     MOVQ (src', dest') |> fix_double_memory_references
-  | Select.CALL label -> [CALLQ label]
+  | Select.CALL label ->
+    (* NOTE: The amount you push and pop here is relative to the spill size.
+     * Push/pop needs to be 16 byte aligned. It's like each push/pop adds 8 bytes.
+     * So spill size + push/pop must be divisible by 16.
+     * Example: spill size is 1 and push/pop is 2, they equal 3 together and therefore is offset.
+     *          spill size is 2 and push/pop is 2, they equal 4 together and therefore is fine.
+     * IMPORTANT: Since the registers we push/pop here are constant, we don't actually need to care about
+     * this, since the rsp offset will always align itself to 16 byte assuming the amount of registers we
+     * push/pop here is an even number. *)
+    [PUSHQ (REGISTER "rcx");
+     PUSHQ (REGISTER "rdx");
+     PUSHQ (REGISTER "r8");
+     PUSHQ (REGISTER "r9");
+     PUSHQ (REGISTER "r10");
+     PUSHQ (REGISTER "r11");
+     CALLQ label;
+     POPQ (REGISTER "r11");
+     POPQ (REGISTER "r10");
+     POPQ (REGISTER "r9");
+     POPQ (REGISTER "r8");
+     POPQ (REGISTER "rdx");
+     POPQ (REGISTER "rcx");]
   | Select.NEG src ->
     let src' = arg_of_select_arg mapping src in
     [NEGQ src']

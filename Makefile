@@ -28,7 +28,8 @@ build-with-runtime:
 
 clean:
 	$(OCB) -clean
-	rm runtime/*.o
-	rm ./program
+	rm -f runtime/*.o
+	rm -f ./program
+	rm -f ./assembly.s
 
 .PHONY: all run build build-test test try clean

@@ -16,8 +16,6 @@ let int_to_valid_register = Hashtbl.create 8
 let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
     [(0, REGISTER "rcx");
      (1, REGISTER "rdx");
-     (2, REGISTER "rsi");
-     (3, REGISTER "rdi");
      (4, REGISTER "r8");
      (5, REGISTER "r9");
      (6, REGISTER "r10");
@@ -25,14 +23,14 @@ let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
 
 let caller_save_registers =
   [REGISTER "rax";
-   REGISTER "rdx";
    REGISTER "rcx";
-   REGISTER "rsi";
-   REGISTER "rdi";
+   REGISTER "rdx";
    REGISTER "r8";
    REGISTER "r9";
    REGISTER "r10";
-   REGISTER "r11"]
+   REGISTER "r11";
+   REGISTER "rsi";
+   REGISTER "rdi"]
 
 let callee_save_registers =
   [REGISTER "rsp";
@@ -100,7 +98,7 @@ let build_liveness_mapping (instructions : Select.instruction list) : Liveness_m
   assign reversed_instructions empty_liveness;
   mapping
 
-let register_of_variable (var : Select.arg) spill_size coloring : Assembly.arg =
+let register_of_variable (var : Select.arg) rsp_offset coloring : Assembly.arg =
   let i = Hashtbl.find coloring var in
   try
     (* Use a register. *)
@@ -111,21 +109,27 @@ let register_of_variable (var : Select.arg) spill_size coloring : Assembly.arg =
     let starting_point = i - (Hashtbl.length int_to_valid_register) in
     (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
        https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
-    let rsp_offset = if spill_size mod 2 = 0 then 1 else 2 in
     let offset = ((starting_point + rsp_offset) * -8) in
     let rsp_register_with_offset = REFERENCE ("rbp", offset) in
     rsp_register_with_offset
 
+(* Given a hashtable, count the number of unique values. *)
+let count_unique tbl : int =
+  let s = Set.create 53 in
+  Hashtbl.iter (fun _k v -> Set.add s v) tbl;
+  Set.size s
+
 (* Create a mapping from variables to registers, then return the leftover variables and the mapping. *)
 let build_variable_to_register_mapping (vars : string list) (coloring : (Select.arg, int) Hashtbl.t) : (string, Assembly.arg) Hashtbl.t * int =
   let variable_size = List.length vars in
-  (* How many variables we can't fit in registers. *)
-  let spill_size = (Hashtbl.length int_to_valid_register) - variable_size in
   let mapping = Hashtbl.create variable_size in
+  (* How many colors point to main memory. *)
+  let spill_size = max ((count_unique coloring) - (Hashtbl.length int_to_valid_register)) 0 in
+  let rsp_offset = if spill_size mod 2 = 0 then 1 else 2 in
   (* Assign registers to variables and return the list of unassigned variables. *)
   List.iter (fun name ->
       let v = Select.VARIABLE name in
-      let reg = register_of_variable v spill_size coloring in
+      let reg = register_of_variable v rsp_offset coloring in
       Hashtbl.add mapping name reg) vars;
   (mapping, spill_size)
 

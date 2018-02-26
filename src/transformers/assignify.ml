@@ -52,6 +52,7 @@ let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (inst
      * IMPORTANT: Since the registers we push/pop here are constant, we don't actually need to care about
      * this, since the rsp offset will always align itself to 16 byte assuming the amount of registers we
      * push/pop here is an even number. *)
+    (* In reality, you should do a separate pass that injects these push/pops based on the liveness. maybe *)
     [PUSHQ (REGISTER "rcx");
      PUSHQ (REGISTER "rdx");
      PUSHQ (REGISTER "r8");

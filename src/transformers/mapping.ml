@@ -16,11 +16,13 @@ let int_to_valid_register = Hashtbl.create 8
 let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
     [(0, REGISTER "rcx");
      (1, REGISTER "rdx");
-     (4, REGISTER "r8");
-     (5, REGISTER "r9");
-     (6, REGISTER "r10");
-     (7, REGISTER "r11")]
+     (2, REGISTER "r8");
+     (3, REGISTER "r9");
+     (4, REGISTER "r10");
+     (5, REGISTER "r11")]
 
+(* Caller-save registers should be pushed onto the stack BEFORE a function is called,
+ * and restored AFTER it's done. *)
 let caller_save_registers =
   [REGISTER "rax";
    REGISTER "rcx";
@@ -220,9 +222,7 @@ let saturate (graph : Interference_graph.G.t) : (Select.arg, int) Hashtbl.t =
   let vertices = Hashtbl.copy var_to_sat_and_adj in
   (* Saturation algorithm *)
   while Hashtbl.length vertices > 0 do
-    let (var, (_, adj)) = get_variable_with_max_saturation vertices in
-    (* We need to get the saturation from the original mapping, not the one we're messing with. *)
-    let (sat, _) = Hashtbl.find var_to_sat_and_adj var in
+    let (var, (sat, adj)) = get_variable_with_max_saturation vertices in
     let color = find_lowest_num_not_in_set sat in
     Hashtbl.add coloring var color;
     (* Adjust the saturation of the adjacent vertices. *)

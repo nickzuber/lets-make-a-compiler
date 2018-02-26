@@ -27,11 +27,11 @@ let prog = Program
 let prog2 = Program
     (BinaryExpression
        (Plus,
-        (Read),
-        (pow2 9)))
+        (pow2 3),
+        (Read)))
 
 let prog_tons_of_variables = Program
-    (pow2 2)
+    (pow2 3)
 
 let _ =
   try

@@ -18,25 +18,27 @@ let prog = Program
        ("y",
         (LetExpression
            ("x",
-            (Int 0),
+            (Int 11),
             (Variable "x"))),
         (BinaryExpression
            (Plus,
-            (Read),
+            (UnaryExpression
+               (Minus,
+                (Int 1))),
             (Variable "y")))))
 
 let prog2 = Program
     (BinaryExpression
        (Plus,
         (pow2 3),
-        (True)))
+        (Int 0)))
 
 let prog_tons_of_variables = Program
     (pow2 3)
 
 let _ =
   try
-    let prog' = prog2 in
+    let prog' = prog in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

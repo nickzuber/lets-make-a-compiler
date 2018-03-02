@@ -20,13 +20,15 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
      | (T_BOOL, c, a) when c = a -> c
      | (T_BOOL, c, a) ->
        raise (Type_error
-                (Printf.sprintf "IfExpression was given types %s and %s but expected those types to be the same."
+                (Printf.sprintf "This expression was given types %s and %s but expected those types to be the same.\n\x1b[91m%s\x1b[49m"
                    (Pprint_ast.string_of_type c)
-                   (Pprint_ast.string_of_type a)))
+                   (Pprint_ast.string_of_type a)
+                   (Pprint_ast.string_of_expression expr ~padding:4)))
      | (t, _, _) ->
        raise (Type_error
-                (Printf.sprintf "IfExpression was tested with type %s but expected type bool."
-                   (Pprint_ast.string_of_type t))))
+                (Printf.sprintf "This expression was tested with type %s but expected type bool.\n\x1b[91m%s\x1b[49m"
+                   (Pprint_ast.string_of_type t)
+                   (Pprint_ast.string_of_expression expr ~padding:4))))
   | BinaryExpression (op, lhs, rhs) ->
     let lhs_type = typecheck lhs env in
     let rhs_type = typecheck rhs env in
@@ -36,26 +38,29 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_INT
        else
          raise (Type_error
-                  (Printf.sprintf "BinaryExpression/Plus was given types %s and %s but expected types int and int."
+                  (Printf.sprintf "This expression was given types %s and %s but expected types int and int.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type lhs_type)
-                     (Pprint_ast.string_of_type rhs_type)))
+                     (Pprint_ast.string_of_type rhs_type)
+                     (Pprint_ast.string_of_expression expr ~padding:4)))
      | And
      | Or ->
        if lhs_type = T_BOOL && rhs_type = T_BOOL then
          T_BOOL
        else
          raise (Type_error
-                  (Printf.sprintf "BinaryExpression/Or was given types %s and %s but expected types bool and bool."
+                  (Printf.sprintf "This expression was given types %s and %s but expected types bool and bool.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type lhs_type)
-                     (Pprint_ast.string_of_type rhs_type)))
+                     (Pprint_ast.string_of_type rhs_type)
+                     (Pprint_ast.string_of_expression expr ~padding:4)))
      | Compare cmp ->
        if lhs_type = T_INT && rhs_type = T_INT then
          T_BOOL
        else
          raise (Type_error
-                  (Printf.sprintf "BinaryExpression/Compare was given types %s and %s but expected types int and int."
+                  (Printf.sprintf "This expression was given types %s and %s but expected types int and int.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type lhs_type)
-                     (Pprint_ast.string_of_type rhs_type))))
+                     (Pprint_ast.string_of_type rhs_type)
+                     (Pprint_ast.string_of_expression expr ~padding:4))))
   | UnaryExpression (op, operand) ->
     let operand_type = typecheck operand env in
     (match op with
@@ -64,15 +69,17 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_INT
        else
          raise (Type_error
-                  (Printf.sprintf "UnaryExpression/Minus was given type %s but expected type int."
-                     (Pprint_ast.string_of_type operand_type)))
+                  (Printf.sprintf "This expression was given type %s but expected type int.\n\x1b[91m%s\x1b[49m"
+                     (Pprint_ast.string_of_type operand_type)
+                     (Pprint_ast.string_of_expression expr ~padding:4)))
      | Not ->
        if operand_type = T_BOOL then
          T_BOOL
        else
          raise (Type_error
-                  (Printf.sprintf "UnaryExpression/Not expression was given type %s but expected type bool."
-                     (Pprint_ast.string_of_type operand_type))))
+                  (Printf.sprintf "This expression was given type %s but expected type bool.\n\x1b[91m%s\x1b[49m"
+                     (Pprint_ast.string_of_type operand_type)
+                     (Pprint_ast.string_of_expression expr ~padding:4))))
   | Int n -> T_INT
   | Read -> T_INT
   | True -> T_BOOL

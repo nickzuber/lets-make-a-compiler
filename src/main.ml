@@ -2,6 +2,7 @@ open Ast
 open Ast.Standard
 open Pprint_ast
 open Uniquify
+open Typecheck
 
 let rec pow2 n =
   if n = 0 then
@@ -28,7 +29,7 @@ let prog2 = Program
     (BinaryExpression
        (Plus,
         (pow2 3),
-        (Read)))
+        (True)))
 
 let prog_tons_of_variables = Program
     (pow2 3)
@@ -44,7 +45,10 @@ let _ =
   with
   | Illegal_variable_reference name ->
     let msg = "variable \x1b[33m" ^ name ^ "\x1b[39m was referenced out of scope." in
-    display_error "Illegal_variable_reference" msg
+    display_error "ILLEGAL VARIABLE REFERENCE" msg
+    |> print_endline
+  | Type_error reason ->
+    display_error "TYPE ERROR" reason
     |> print_endline
   | _ as e ->
     display_error "Unknown_error" "Caught an unhandled error"

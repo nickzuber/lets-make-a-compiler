@@ -61,10 +61,13 @@ module Interference_graph = struct
   module Graph_components = struct
     type t = Ast.Select.arg
   end
+
   (* Signature for creating a interference graph object. *)
   module G = Graph.Imperative.Graph.Abstract(Graph_components)
+
   (* Traversal module for our graph. *)
   module Bfs = Graph.Traverse.Bfs(G)
+
   (* Create an interference graph from a list of arguments.
    * Return that graph and also a hashmap linking Select variable args to its respective vertex.
    * We use this hashtable to create edges in our graph later. We need to keep track of the actual

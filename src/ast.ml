@@ -1,15 +1,26 @@
 module rec Standard : sig
+  type cmps =
+    | Equal
+    | GreaterThan
+    | LessThan
   type unops =
     | Minus
+    | Not
   type binops =
     | Plus
+    | And
+    | Or
+    | Compare of cmps
   type expression =
     | Read
+    | True
+    | False
     | Int of int
     | Variable of string
     | UnaryExpression of unops * expression
     | BinaryExpression of binops * expression * expression
     | LetExpression of string * expression * expression
+    | IfExpression of expression * expression * expression
 end = Standard
 
 module rec Flat : sig
@@ -62,6 +73,10 @@ module rec Assembly : sig
     | POPQ of arg
     | LEAVEQ
 end = Assembly
+
+type t =
+  | T_BOOL
+  | T_INT
 
 type program =
   | Program of Standard.expression

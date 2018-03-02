@@ -38,6 +38,8 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
     match node with
     | Read -> Printf.sprintf "%sRead" (build_offset padding)
     | Int n -> Printf.sprintf "%sInt: %d" (build_offset padding) n
+    | True -> Printf.sprintf "%sTrue" (build_offset padding)
+    | False -> Printf.sprintf "%sFalse" (build_offset padding)
     | Variable name -> Printf.sprintf "%sVariable: %s" (build_offset padding) name
     | BinaryExpression (op, lhs, rhs) ->
       Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
@@ -55,15 +57,31 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
         (build_offset padding)
         (build_offset (padding + padding_offset) ^ v)
         (string_of_expression binding ~padding:(padding + padding_offset))
-        (string_of_expression expr ~padding:(padding + padding_offset)))
+        (string_of_expression expr ~padding:(padding + padding_offset))
+    | IfExpression (t, c, a) ->
+      Printf.sprintf "%sIfExpression\n%s\n%s\n%s"
+        (build_offset padding)
+        (string_of_expression t ~padding:(padding + padding_offset))
+        (string_of_expression c ~padding:(padding + padding_offset))
+        (string_of_expression a ~padding:(padding + padding_offset)))
 
 and string_of_binop ?(padding=0) node : string = Ast.Standard.(
     match node with
-    | Plus -> Printf.sprintf "%sPlus" (build_offset padding))
+    | Plus -> Printf.sprintf "%sPlus" (build_offset padding)
+    | And -> Printf.sprintf "%sAnd" (build_offset padding)
+    | Or -> Printf.sprintf "%sOr" (build_offset padding)
+    | Compare cmp -> string_of_cmps cmp)
+
+and string_of_cmps ?(padding=0) node : string = Ast.Standard.(
+    match node with
+    | Equal -> Printf.sprintf "%sEqual" (build_offset padding)
+    | GreaterThan -> Printf.sprintf "%sGreaterThan" (build_offset padding)
+    | LessThan -> Printf.sprintf "%sLessThan" (build_offset padding))
 
 and string_of_unop ?(padding=0) node : string = Ast.Standard.(
     match node with
-    | Minus -> Printf.sprintf "%sMinus" (build_offset padding))
+    | Minus -> Printf.sprintf "%sMinus" (build_offset padding)
+    | Not -> Printf.sprintf "%sNot" (build_offset padding))
 
 and string_of_statements ?(padding=0) stmts : string = Ast.Flat.(
     let start = (build_offset padding) ^ "Statements:" in
@@ -226,6 +244,11 @@ and string_of_flat_binop ?(padding=0) node : string = Ast.Flat.(
 and string_of_flat_unop ?(padding=0) node : string = Ast.Flat.(
     match node with
     | Minus -> Printf.sprintf "%s(-)" (build_offset padding))
+
+and string_of_type ?(padding=0) node : string = Ast.(
+    match node with
+    | T_INT -> Printf.sprintf "%sint" (build_offset padding)
+    | T_BOOL -> Printf.sprintf "%sbool" (build_offset padding))
 
 let display_title (title : string) (prog : program) : program =
   let prog_string = string_of_program prog ~padding:1 in

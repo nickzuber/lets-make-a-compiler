@@ -34,6 +34,11 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
     let body' = uniquify body env' in
     let name' = Printf.sprintf "%s_%d" name count in
     LetExpression (name', binding', body')
+  | IfExpression (test, consequent, alternate) ->
+    let test' = uniquify test env in
+    let consequent' = uniquify consequent env in
+    let alternate' = uniquify alternate env in
+    IfExpression (test', consequent', alternate')
   | BinaryExpression (op, lhs, rhs) ->
     let lhs' = uniquify lhs env in
     let rhs' = uniquify rhs env in
@@ -43,6 +48,8 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
     UnaryExpression (op, operand')
   | Int n -> Int n
   | Read -> Read
+  | True -> True
+  | False -> False
 
 (* Given a program, removes any instances of shadowing by providing each variable
  * with a unique name. A feature of this transformation is any variables out referenced
@@ -50,8 +57,11 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
  * The approach here is to extract the program body and uniquify that expression, since
  * the recursive algorithm operates on expressions anyways. *)
 let transform (prog : program) : program =
-  let env = Hashtbl.create 20 in
+  let env = Hashtbl.create 53 in
   let uniquified_body = match prog with
     | Program expr -> uniquify expr env
     | _ -> raise (Incorrect_step "expected type Program") in
-  Program uniquified_body
+  let uprog = Program uniquified_body in
+  let uprog_t = Typecheck.transform uprog in
+  Printf.printf "\nTYPE: %s\n" (Pprint_ast.string_of_type uprog_t);
+  uprog

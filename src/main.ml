@@ -39,17 +39,17 @@ let if_expr =
          ((Compare LessThan),
           (Int 9),
           (Int 10))),
-      (Int 11),
-      (Int 22)))
+      (pow2 2),
+      (pow2 4)))
 
 let prog2 = Program
     (IfExpression
-       (compare_expr,
-        if_expr,
-        (Int 9000)))
+       ((UnaryExpression (Not, True)),
+        Int 1,
+        Int 0))
 
 let prog_tons_of_variables = Program
-    (pow2 3)
+    (pow2 4)
 
 let _ =
   try

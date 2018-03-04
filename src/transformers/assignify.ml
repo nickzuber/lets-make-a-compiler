@@ -28,7 +28,8 @@ let cc_of_select_cc (cc : Select.cc) : Assembly.cc =
 
 (* If both arguments reference memory, make a fix so that doesn't happen.
  * If we try to compare two INT's, we need to make the last arg a register.
- * Compares cannot have an int as the right arg. *)
+ * CMP must be [ANY], REGISTER
+ * XOR must be [ANY], REGISTER *)
 let fix_illegal_instruction_combinations (instruction : Assembly.instruction) : Assembly.instruction list =
   match instruction with
   | ADDQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
@@ -46,6 +47,11 @@ let fix_illegal_instruction_combinations (instruction : Assembly.instruction) : 
   | CMPQ (reg, INT m) ->
     [MOVQ (INT m, REGISTER "rax");
      CMPQ (reg, REGISTER "rax")]
+  | XORQ (INT n, INT m) ->
+    [MOVQ (INT m, REGISTER "rax");
+     XORQ (INT n, REGISTER "rax")]
+  | XORQ (reg, INT m) ->
+    [XORQ (INT m, reg)]
   | _ -> [instruction]
 
 let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =

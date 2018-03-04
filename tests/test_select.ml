@@ -8,11 +8,13 @@ let test_int () =
       FlatProgram
         ([],
          [],
-         Int 2)
+         Int 2,
+         T_INT)
     ) |> Selectify.transform in
   let expect = Ast.Select.(
       SelectProgram
-        ([],
+        (T_INT,
+         [],
          [],
          RET (INT 2))
     ) in
@@ -23,11 +25,13 @@ let test_read () =
       FlatProgram
         (["read_0"],
          [Assignment ("read_0", Read)],
-         Variable "read_0")
+         Variable "read_0",
+         T_INT)
     ) |> Selectify.transform in
   let expect = Ast.Select.(
       SelectProgram
-        (["read_0"],
+        (T_INT,
+         ["read_0"],
          [CALL "_read_int";
           MOV ((REGISTER "rax"), (VARIABLE "read_0"))],
          RET (VARIABLE "read_0"))
@@ -45,11 +49,13 @@ let test_binop1 () =
                          (Plus,
                           (Variable "read_1"),
                           (Int 2))))],
-         Variable "binary_expression_0")
+         Variable "binary_expression_0",
+         T_INT)
     ) |> Selectify.transform in
   let expect = Ast.Select.(
       SelectProgram
-        (["read_1";
+        (T_INT,
+         ["read_1";
           "binary_expression_0"],
          [CALL "_read_int";
           MOV ((REGISTER "rax"), (VARIABLE "read_1"));

@@ -41,19 +41,21 @@ let print_liveness_mapping liveness_mapping =
 
 let select_vars_and_instructions_of_program prog =
   let select_prog = prog |> Uniquify.transform
+                    |> Typecheck.transform
                     |> Flatten.transform
                     |> Selectify.transform in
   match select_prog with
-  | SelectProgram (vars, instrs, _) ->
+  | SelectProgram (_, vars, instrs, _) ->
     (vars, instrs)
   | _ -> (raise Not_found)
 
 let iter_select_instructions_of_program fn prog =
   let select_prog = prog |> Uniquify.transform
+                    |> Typecheck.transform
                     |> Flatten.transform
                     |> Selectify.transform in
   match select_prog with
-  | SelectProgram (_, instrs, _) ->
+  | SelectProgram (_, _, instrs, _) ->
     let mapping = build_liveness_mapping instrs in
     fn mapping
   | _ -> ()

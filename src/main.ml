@@ -27,18 +27,33 @@ let prog = Program
                 (Int 1))),
             (Variable "y")))))
 
+let compare_expr =
+  (BinaryExpression
+     ((Compare Equal),
+      (Read),
+      (Int 1)))
+
+let if_expr =
+  (IfExpression
+     ((BinaryExpression
+         ((Compare LessThan),
+          (Int 9),
+          (Int 10))),
+      (Int 11),
+      (Int 22)))
+
 let prog2 = Program
-    (BinaryExpression
-       (Plus,
-        (pow2 3),
-        (Int 0)))
+    (IfExpression
+       (compare_expr,
+        if_expr,
+        (Int 9000)))
 
 let prog_tons_of_variables = Program
     (pow2 3)
 
 let _ =
   try
-    let prog' = prog in
+    let prog' = prog2 in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)
@@ -47,10 +62,10 @@ let _ =
   with
   | Illegal_variable_reference name ->
     let msg = "variable \x1b[33m" ^ name ^ "\x1b[39m was referenced out of scope." in
-    display_error "ILLEGAL VARIABLE REFERENCE" msg
+    display_error "Illegal Variable Reference" msg
     |> print_endline
   | Type_error reason ->
-    display_error "TYPE ERROR" reason
+    display_error "Type Error" reason
     |> print_endline
   | _ as e ->
     display_error "Unknown_error" "Caught an unhandled error"

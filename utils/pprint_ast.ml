@@ -1,5 +1,7 @@
 open Ast
 
+exception Bad_set_instruction
+
 let padding_offset = Settings.padding_offset_for_pprint_ast
 
 let build_offset padding : string =
@@ -10,25 +12,31 @@ let rec string_of_program ?(padding=0) node : string =
   | Program expr ->
     let str = string_of_expression expr ~padding:(padding + padding_offset) in
     Printf.sprintf "%sProgram\n%s" (build_offset padding) str
-  | FlatProgram (vars, stmts, arg) ->
+  | ProgramTyped (expr_t, expr) ->
+    let str = string_of_expression expr ~padding:(padding + padding_offset) in
+    Printf.sprintf "%sProgramTyped : \x1b[90m%s\x1b[39m\n%s"
+      (build_offset padding)
+      (string_of_type expr_t)
+      str
+  | FlatProgram (vars, stmts, arg, arg_t) ->
     let vars_string = string_of_variables vars ~padding:(padding + padding_offset) in
     let stmts_string = string_of_statements stmts ~padding:(padding + padding_offset) in
     let arg_string = string_of_argument arg in
-    Printf.sprintf "%sFlatProgram\n%s\n%s\n%sArgument:\n%s%s"
+    Printf.sprintf "%sFlatProgram\n%s\n%s\n%s\x1b[4mArgument:\x1b[0m\n%s%s"
       (build_offset padding)
       vars_string
       stmts_string
       (build_offset (padding + padding_offset))
       (build_offset (padding + (padding_offset * 2)))
       arg_string
-  | SelectProgram (_vars, instructions, final_instruction) ->
+  | SelectProgram (t, _vars, instructions, final_instruction) ->
     let instructions_string = string_of_instructions instructions ~padding:(padding) in
     Printf.sprintf "%sSelectProgram:%s\n%s%s"
       (build_offset padding)
       instructions_string
       (build_offset (padding + padding_offset))
       (string_of_instruction final_instruction)
-  | AssemblyProgram instructions ->
+  | AssemblyProgram (t, instructions) ->
     let instructions_string = string_of_assembly_instructions instructions ~padding:(padding) in
     Printf.sprintf "%sAssignProgram:%s"
       (build_offset padding)
@@ -70,7 +78,7 @@ and string_of_binop ?(padding=0) node : string = Ast.Standard.(
     | Plus -> Printf.sprintf "%sPlus" (build_offset padding)
     | And -> Printf.sprintf "%sAnd" (build_offset padding)
     | Or -> Printf.sprintf "%sOr" (build_offset padding)
-    | Compare cmp -> string_of_cmps cmp)
+    | Compare cmp -> Printf.sprintf "%s%s" (build_offset padding) (string_of_cmps cmp))
 
 and string_of_cmps ?(padding=0) node : string = Ast.Standard.(
     match node with
@@ -83,35 +91,34 @@ and string_of_unop ?(padding=0) node : string = Ast.Standard.(
     | Minus -> Printf.sprintf "%sMinus" (build_offset padding)
     | Not -> Printf.sprintf "%sNot" (build_offset padding))
 
-and string_of_statements ?(padding=0) stmts : string = Ast.Flat.(
-    let start = (build_offset padding) ^ "Statements:" in
+and string_of_statements ?(padding=0) ?(title="Statements") stmts : string = Ast.Flat.(
+    let start = if title = "Statements" then
+        Printf.sprintf "%s\x1b[4m%s:\x1b[0m" (build_offset padding) title
+      else
+        Printf.sprintf "\x1b[90m%s%s:\x1b[39m" (build_offset padding) title in
     let statements = List.fold_left (fun acc stmt ->
         let str = string_of_statement stmt ~padding:(padding + padding_offset) in
         acc ^ "\n" ^ str) "" stmts in
-    start ^ statements
-  )
+    start ^ statements)
 
 and string_of_instructions ?(padding=0) instructions : string = Ast.Select.(
     let instructions_string = List.fold_left (fun acc instr ->
         let str = string_of_instruction instr ~padding:(padding + padding_offset) in
         acc ^ "\n" ^ str) "" instructions in
-    (build_offset padding) ^ instructions_string
-  )
+    (build_offset padding) ^ instructions_string)
 
 and string_of_assembly_instructions ?(padding=0) instructions : string = Ast.Assembly.(
     let instructions_string = List.fold_left (fun acc instr ->
         let str = string_of_assembly_instruction instr ~padding:(padding + padding_offset) in
         acc ^ "\n" ^ str) "" instructions in
-    (build_offset padding) ^ instructions_string
-  )
+    (build_offset padding) ^ instructions_string)
 
 and string_of_variables ?(padding=0) vars : string = Ast.Flat.(
-    let start = (build_offset padding) ^ "Variables:" in
+    let start = Printf.sprintf "%s\x1b[4mVariables:\x1b[0m" (build_offset padding) in
     let variables = List.fold_left (fun acc var ->
         let str = build_offset(padding + padding_offset) ^ var in
         acc ^ "\n" ^ str) "" vars in
-    start ^ variables
-  )
+    start ^ variables)
 
 and string_of_statement ?(padding=0) node : string = Ast.Flat.(
     match node with
@@ -120,7 +127,13 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
         (build_offset padding)
         (name)
         (string_of_flat_expression expr)
-  )
+    | IfStatement (test, consequent, alternate) ->
+      Printf.sprintf "%sIfStatement\n%s\x1b[90mtest:\x1b[39m\n%s%s\n%s\n%s"
+        (build_offset padding)
+        (build_offset (padding))
+        (build_offset (padding + padding_offset)) (string_of_flat_expression test ~padding:(padding))
+        (string_of_statements consequent ~title:"then" ~padding:(padding))
+        (string_of_statements alternate ~title:"else" ~padding:(padding)))
 
 and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
     match instruction with
@@ -159,7 +172,52 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
-  )
+    | XORQ (a, b) ->
+      Printf.sprintf "%sxorq %s, %s"
+        (build_offset padding)
+        (string_of_arg a)
+        (string_of_arg b)
+    | CMPQ (a, b) ->
+      Printf.sprintf "%scmpq %s, %s"
+        (build_offset padding)
+        (string_of_arg a)
+        (string_of_arg b)
+    | MOVZBQ (a, b) ->
+      Printf.sprintf "%smovzbq %s, %s"
+        (build_offset padding)
+        (string_of_arg a)
+        (string_of_arg b)
+    | JUMP (cc, l) ->
+      Printf.sprintf "%s%s %s"
+        (build_offset padding)
+        (string_of_jump_instr cc)
+        l
+    | SET (cc, r) ->
+      Printf.sprintf "%s%s %s"
+        (build_offset padding)
+        (string_of_set_instr cc)
+        (string_of_arg r)
+    | LABEL l ->
+      Printf.sprintf "%s:"
+        l)
+
+and string_of_set_instr cc = Ast.Select.(
+    match cc with
+    | E -> "sete"
+    | G -> "setg"
+    | L -> "setl"
+    | GE -> "setge"
+    | LE -> "setle"
+    | Always -> (raise Bad_set_instruction))
+
+and string_of_jump_instr cc = Ast.Select.(
+    match cc with
+    | E -> "je"
+    | G -> "jg"
+    | L -> "jl"
+    | GE -> "jge"
+    | LE -> "jle"
+    | Always -> "je")
 
 and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assembly.(
     match instruction with
@@ -200,27 +258,71 @@ and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assem
         (build_offset padding)
         (string_of_assembly_arg a)
         (string_of_assembly_arg b)
-  )
+    | XORQ (a, b) ->
+      Printf.sprintf "%sxorq \t%s, %s"
+        (build_offset padding)
+        (string_of_assembly_arg a)
+        (string_of_assembly_arg b)
+    | CMPQ (a, b) ->
+      Printf.sprintf "%scmpq \t%s, %s"
+        (build_offset padding)
+        (string_of_assembly_arg a)
+        (string_of_assembly_arg b)
+    | MOVZBQ (a, b) ->
+      Printf.sprintf "%smovzbq \t%s, %s"
+        (build_offset padding)
+        (string_of_assembly_arg a)
+        (string_of_assembly_arg b)
+    | JUMP (cc, l) ->
+      Printf.sprintf "%s%s \t%s"
+        (build_offset padding)
+        (string_of_jump_assembly_instr cc)
+        l
+    | SET (cc, r) ->
+      Printf.sprintf "%s%s \t%s"
+        (build_offset padding)
+        (string_of_set_assembly_instr cc)
+        (string_of_assembly_arg r)
+    | LABEL l ->
+      Printf.sprintf "%s:"
+        l)
+
+and string_of_set_assembly_instr cc = Ast.Assembly.(
+    match cc with
+    | E -> "sete"
+    | G -> "setg"
+    | L -> "setl"
+    | GE -> "setge"
+    | LE -> "setle"
+    | Always -> (raise Bad_set_instruction))
+
+and string_of_jump_assembly_instr cc = Ast.Assembly.(
+    match cc with
+    | E -> "je\t"
+    | G -> "jg\t"
+    | L -> "jl\t"
+    | GE -> "jge"
+    | LE -> "jle"
+    | Always -> "jmp\t")
 
 and string_of_arg ?(padding=0) arg : string = Ast.Select.(
     match arg with
     | INT n -> Printf.sprintf "%d" n
     | VARIABLE v -> Printf.sprintf "%s" v
-    | REGISTER r -> Printf.sprintf "%%%s" r
-  )
+    | BYTE_REGISTER r -> Printf.sprintf "%s" r
+    | REGISTER r -> Printf.sprintf "%%%s" r)
 
 and string_of_assembly_arg ?(padding=0) arg : string = Ast.Assembly.(
     match arg with
     | INT n -> Printf.sprintf "$%d" n
     | REGISTER r -> Printf.sprintf "%%%s" r
-    | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r
-  )
+    | BYTE_REGISTER r -> Printf.sprintf "%%%s" r
+    | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r)
 
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(
     match node with
     | Int n -> Printf.sprintf "Int(%d)" n
-    | Variable name -> Printf.sprintf "%s" name
-  )
+    | Variable name -> Printf.sprintf "%s" name)
 
 and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
     match node with
@@ -234,16 +336,25 @@ and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
       Printf.sprintf "%s %s %s"
         (string_of_argument lhs)
         (string_of_flat_binop op)
-        (string_of_argument rhs)
-  )
+        (string_of_argument rhs))
 
 and string_of_flat_binop ?(padding=0) node : string = Ast.Flat.(
     match node with
-    | Plus -> Printf.sprintf "%s+" (build_offset padding))
+    | Plus -> Printf.sprintf "%s+" (build_offset padding)
+    | And -> Printf.sprintf "%s&&" (build_offset padding)
+    | Or -> Printf.sprintf "%s||" (build_offset padding)
+    | Compare cmp -> Printf.sprintf "%s%s" (build_offset padding) (string_of_cmp cmp))
 
 and string_of_flat_unop ?(padding=0) node : string = Ast.Flat.(
     match node with
-    | Minus -> Printf.sprintf "%s(-)" (build_offset padding))
+    | Not -> Printf.sprintf "%s!" (build_offset padding)
+    | Minus -> Printf.sprintf "%s-" (build_offset padding))
+
+and string_of_cmp ?(padding=0) node : string = Ast.Flat.(
+    match node with
+    | Equal -> Printf.sprintf "%s===" (build_offset padding)
+    | GreaterThan -> Printf.sprintf "%s>" (build_offset padding)
+    | LessThan -> Printf.sprintf "%s<" (build_offset padding))
 
 and string_of_type ?(padding=0) node : string = Ast.(
     match node with

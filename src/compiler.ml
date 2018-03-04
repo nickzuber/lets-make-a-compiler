@@ -4,6 +4,7 @@ open Pprint_ast
 (* The core compiling routine *)
 let compile (prog : program) : program =
   prog |> Uniquify.transform
+  |> Typecheck.transform
   |> Flatten.transform
   |> Selectify.transform
   |> Assignify.transform
@@ -13,6 +14,8 @@ let compile_and_debug (prog : program) : program =
   Printf.printf "%s" (create_title "Compiling each step in debug mode");
   prog |> Uniquify.transform
   |> display_title "Uniquify"
+  |> Typecheck.transform
+  |> display_title "Typecheck"
   |> Flatten.transform
   |> display_title "Flatten"
   |> Selectify.transform

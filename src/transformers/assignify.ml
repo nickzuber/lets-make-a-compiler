@@ -14,9 +14,22 @@ let arg_of_select_arg (mapping : (string, Assembly.arg) Hashtbl.t) (arg : Select
   | Select.INT n -> INT n
   | Select.REGISTER r -> REGISTER r
   | Select.VARIABLE v -> register_of_variable mapping v
+  | Select.BYTE_REGISTER r -> BYTE_REGISTER r
 
-(* If both arguments reference memory, make a fix so that doesn't happen. *)
-let fix_double_memory_references (instruction : Assembly.instruction) : Assembly.instruction list =
+let cc_of_select_cc (cc : Select.cc) : Assembly.cc =
+  match cc with
+  | Select.E -> E
+  | Select.G -> G
+  | Select.L -> L
+  | Select.GE -> GE
+  | Select.LE -> LE
+  | Select.Always -> Always
+
+
+(* If both arguments reference memory, make a fix so that doesn't happen.
+ * If we try to compare two INT's, we need to make the last arg a register.
+ * Compares cannot have an int as the right arg. *)
+let fix_illegal_instruction_combinations (instruction : Assembly.instruction) : Assembly.instruction list =
   match instruction with
   | ADDQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
     [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
@@ -27,6 +40,12 @@ let fix_double_memory_references (instruction : Assembly.instruction) : Assembly
   | MOVQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
     [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
      MOVQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
+  | CMPQ (INT n, INT m) ->
+    [MOVQ (INT m, REGISTER "rax");
+     CMPQ (INT n, REGISTER "rax")]
+  | CMPQ (reg, INT m) ->
+    [MOVQ (INT m, REGISTER "rax");
+     CMPQ (reg, REGISTER "rax")]
   | _ -> [instruction]
 
 let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =
@@ -34,15 +53,15 @@ let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (inst
   | Select.ADD (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
-    ADDQ (src', dest') |> fix_double_memory_references
+    ADDQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.SUB (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
-    SUBQ (src', dest') |> fix_double_memory_references
+    SUBQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.MOV (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
-    MOVQ (src', dest') |> fix_double_memory_references
+    MOVQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.CALL label ->
     (* NOTE: The amount you push and pop here is relative to the spill size.
      * Push/pop needs to be 16 byte aligned. It's like each push/pop adds 8 bytes.
@@ -78,6 +97,26 @@ let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (inst
   | Select.POP src ->
     let src' = arg_of_select_arg mapping src in
     [POPQ src']
+  | Select.XORQ (src, dest) ->
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    XORQ (src', dest') |> fix_illegal_instruction_combinations
+  | Select.CMPQ (src, dest) ->
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    CMPQ (src', dest') |> fix_illegal_instruction_combinations
+  | Select.SET (cc, arg) ->
+    let cc' = cc_of_select_cc cc in
+    let arg' = arg_of_select_arg mapping arg in
+    SET (cc', arg') |> fix_illegal_instruction_combinations
+  | Select.JUMP (cc, label) ->
+    let cc' = cc_of_select_cc cc in
+    JUMP (cc', label) |> fix_illegal_instruction_combinations
+  | Select.MOVZBQ (src, dest) ->
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    MOVZBQ (src', dest') |> fix_illegal_instruction_combinations
+  | Select.LABEL label -> [LABEL label]
 
 let rec assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.instruction list) : Assembly.instruction list =
   match instructions with
@@ -88,8 +127,8 @@ let rec assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Sele
 (* NOTE: `retq` should always return $rax, otherwise you have an error. *)
 (* Given a program of variables and assembly instructions, produce a valid assembly program. *)
 let transform (prog : program) : program =
-  let instructions = match prog with
-    | SelectProgram (vars, instructions, final_instruction) ->
+  let (t, instructions) = match prog with
+    | SelectProgram (t, vars, instructions, final_instruction) ->
       (* The spilled variable size is used for offsetting the stack pointer. *)
       let mapping, spilled_variable_size = Mapping.create vars instructions in
       let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
@@ -106,6 +145,6 @@ let transform (prog : program) : program =
              LEAVEQ;  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * spilled_variable_size), REGISTER "rsp")` *)
              RETQ (REGISTER "rax")]
           | _ -> raise (Unexpected_argument)) in
-      prepare_memory @ instructions @ prepare_return
+      (t, prepare_memory @ instructions @ prepare_return)
     | _ -> raise (Incorrect_step "expected type SelectProgram") in
-  AssemblyProgram instructions
+  AssemblyProgram (t, instructions)

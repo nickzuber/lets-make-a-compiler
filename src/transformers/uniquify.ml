@@ -61,7 +61,4 @@ let transform (prog : program) : program =
   let uniquified_body = match prog with
     | Program expr -> uniquify expr env
     | _ -> raise (Incorrect_step "expected type Program") in
-  let uprog = Program uniquified_body in
-  let uprog_t = Typecheck.transform uprog in
-  Printf.printf "\nTYPE: %s\n" (Pprint_ast.string_of_type uprog_t);
-  uprog
+  Program uniquified_body

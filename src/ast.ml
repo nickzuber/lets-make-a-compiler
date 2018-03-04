@@ -23,11 +23,20 @@ module rec Standard : sig
     | IfExpression of expression * expression * expression
 end = Standard
 
+(* Note: not really flat anymore with if statements. *)
 module rec Flat : sig
+  type cmps =
+    | Equal
+    | GreaterThan
+    | LessThan
   type unops =
     | Minus
+    | Not
   type binops =
     | Plus
+    | And
+    | Or
+    | Compare of cmps
   type argument =
     | Int of int
     | Variable of string
@@ -38,30 +47,52 @@ module rec Flat : sig
     | BinaryExpression of binops * argument * argument
   type statement =
     | Assignment of string * expression
+    | IfStatement of expression * statement list * statement list
 end = Flat
 
 module rec Select : sig
-  type reg = string
+  type cc =
+    | E
+    | G
+    | L
+    | GE
+    | LE
+    | Always
   type arg =
     | INT of int
     | VARIABLE of string
     | REGISTER of string
+    | BYTE_REGISTER of string
   type instruction =
     | ADD of arg * arg
     | SUB of arg * arg
     | MOV of arg * arg
-    | CALL of string  (* label *)
+    | CALL of string (* label *)
     | NEG of arg
     | RET of arg
     | PUSH of arg
     | POP of arg
+    | XORQ of arg * arg
+    | CMPQ of arg * arg
+    | SET of cc * arg (* cc, byte-register *)
+    | MOVZBQ of arg * arg (* byte-register, register *)
+    | JUMP of cc * string (* cc, label *)
+    | LABEL of string (* label *)
 end = Select
 
 module rec Assembly : sig
+  type cc =
+    | E
+    | G
+    | L
+    | GE
+    | LE
+    | Always
   type arg =
     | INT of int
     | REGISTER of string
     | REFERENCE of string * int
+    | BYTE_REGISTER of string
   type instruction =
     | ADDQ of arg * arg
     | SUBQ of arg * arg
@@ -71,6 +102,12 @@ module rec Assembly : sig
     | RETQ of arg
     | PUSHQ of arg
     | POPQ of arg
+    | XORQ of arg * arg
+    | CMPQ of arg * arg
+    | SET of cc * arg (* cc, byte-register *)
+    | MOVZBQ of arg * arg (* byte-register, register *)
+    | JUMP of cc * string (* cc, label *)
+    | LABEL of string (* label *)
     | LEAVEQ
 end = Assembly
 
@@ -80,6 +117,7 @@ type t =
 
 type program =
   | Program of Standard.expression
-  | FlatProgram of string list * Flat.statement list * Flat.argument
-  | SelectProgram of string list * Select.instruction list * Select.instruction
-  | AssemblyProgram of Assembly.instruction list
+  | ProgramTyped of t * Standard.expression
+  | FlatProgram of string list * Flat.statement list * Flat.argument * t
+  | SelectProgram of t * string list * Select.instruction list * Select.instruction
+  | AssemblyProgram of t * Assembly.instruction list

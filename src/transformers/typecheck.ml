@@ -86,9 +86,10 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
   | False -> T_BOOL
 
 (* *)
-let transform (prog : program) : Ast.t =
+let transform (prog : program) : program =
   (* Env is a mapping from variable name to type. *)
   let env = Hashtbl.create 53 in
-  match prog with
-  | Program expr -> typecheck expr env
-  | _ -> raise (Incorrect_step "expected type Program")
+  let (expr_type, expr) = match prog with
+    | Program expr -> ((typecheck expr env), expr)
+    | _ -> raise (Incorrect_step "expected type Program") in
+  ProgramTyped (expr_type, expr)

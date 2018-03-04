@@ -53,10 +53,7 @@ let get_write_args (instr : Select.instruction) : Select.arg list =
   | Select.ADD (src, dest) -> [dest]
   | Select.MOV (src, dest) -> [dest]
   | Select.NEG (arg) -> [arg]
-  | Select.PUSH arg -> []
-  | Select.POP arg -> []
-  | Select.CALL label -> []
-  | Select.RET arg -> []
+  | _ -> []
 
 (* Get the arguments that are considered for reads, regardless of being a variable or not. *)
 let get_read_args (instr : Select.instruction) : Select.arg list =
@@ -65,10 +62,7 @@ let get_read_args (instr : Select.instruction) : Select.arg list =
   | Select.ADD (src, dest) -> [src; dest]
   | Select.MOV (src, dest) -> [src]
   | Select.NEG (arg) -> [arg]
-  | Select.PUSH arg -> []
-  | Select.POP arg -> []
-  | Select.CALL label -> []
-  | Select.RET arg -> []
+  | _ -> []
 
 (* Get the arguments that are considered for writes that are variables. *)
 let get_write_variables (instr : Select.instruction) : Select.arg Set.t =
@@ -178,8 +172,11 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : I
       | Select.ADD (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
       | Select.SUB (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
       | Select.NEG d -> attempt_to_add_edge liveness [d] d graph vt
-      | Select.RET d -> ()
-      | Select.CALL label -> ()) mapping;
+      | Select.XORQ (s, d) -> ()
+      | Select.CMPQ (s, d) -> ()
+      | Select.SET (_cc, d) -> ()
+      | Select.MOVZBQ (s, d) -> ()
+      | _ -> ()) mapping;
   graph_interference_ts := ((Unix.gettimeofday ()) -. start);
   graph
 

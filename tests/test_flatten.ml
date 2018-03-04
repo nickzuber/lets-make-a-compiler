@@ -6,34 +6,39 @@ open Pprint_ast
 
 let test_int () =
   let actual = Ast.Standard.(
-      Program
-        (Int 2)
+      ProgramTyped
+        (T_INT,
+         Int 2)
     ) |> Flatten.transform in
   let expect = Ast.Flat.(
       FlatProgram
         ([],
          [],
-         Int 2)
+         Int 2,
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_read () =
   let actual = Ast.Standard.(
-      Program
-        (Read)
+      ProgramTyped
+        (T_INT,
+         Read)
     ) |> Flatten.transform in
   let expect = Ast.Flat.(
       FlatProgram
         (["read_0"],
          [(Assignment ("read_0", Read))],
-         Variable "read_0")
+         Variable "read_0",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_binop1 () =
   let actual = Ast.Standard.(
-      Program
-        (BinaryExpression
+      ProgramTyped
+        (T_INT,
+         BinaryExpression
            (Plus,
             (Int 1),
             (Int 2)))
@@ -47,14 +52,16 @@ let test_binop1 () =
                  (Plus,
                   (Int 1),
                   (Int 2)))))],
-         Variable "binary_expression_0")
+         Variable "binary_expression_0",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_binop2 () =
   let actual = Ast.Standard.(
-      Program
-        (BinaryExpression
+      ProgramTyped
+        (T_INT,
+         BinaryExpression
            (Plus,
             (BinaryExpression
                (Plus,
@@ -86,14 +93,16 @@ let test_binop2 () =
                  (Plus,
                   (Variable "binary_expression_1"),
                   (Int 2)))))],
-         Variable "binary_expression_0")
+         Variable "binary_expression_0",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_unnop () =
   let actual = Ast.Standard.(
-      Program
-        (UnaryExpression
+      ProgramTyped
+        (T_INT,
+         UnaryExpression
            (Minus,
             (Int 3)))
     ) |> Flatten.transform in
@@ -105,14 +114,16 @@ let test_unnop () =
               (UnaryExpression
                  (Minus,
                   (Int 3)))))],
-         Variable "unary_expression_0")
+         Variable "unary_expression_0",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_unnop_nested () =
   let actual = Ast.Standard.(
-      Program
-        (UnaryExpression
+      ProgramTyped
+        (T_INT,
+         UnaryExpression
            (Minus,
             (UnaryExpression
                (Minus,
@@ -131,14 +142,16 @@ let test_unnop_nested () =
               (UnaryExpression
                  (Minus,
                   (Variable "unary_expression_1")))))],
-         Variable "unary_expression_0")
+         Variable "unary_expression_0",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_letexpr1 () =
   let actual = Ast.Standard.(
-      Program
-        (LetExpression
+      ProgramTyped
+        (T_INT,
+         LetExpression
            ("x_1",
             (Int 1),
             (Int 2)))
@@ -149,14 +162,16 @@ let test_letexpr1 () =
          [(Assignment
              ("x_1",
               (Argument (Int 1))))],
-         Int 2)
+         Int 2,
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_letexpr2 () =
   let actual = Ast.Standard.(
-      Program
-        (LetExpression
+      ProgramTyped
+        (T_INT,
+         LetExpression
            ("x_1",
             (BinaryExpression
                (Plus,
@@ -176,14 +191,16 @@ let test_letexpr2 () =
           (Assignment
              ("x_1",
               (Argument (Variable "binary_expression_0"))))],
-         Int 2)
+         Int 2,
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_letexpr_nested_diff_name () =
   let actual = Ast.Standard.(
-      Program
-        (LetExpression
+      ProgramTyped
+        (T_INT,
+         LetExpression
            ("x_1",
             (BinaryExpression
                (Plus,
@@ -216,14 +233,16 @@ let test_letexpr_nested_diff_name () =
           (Assignment
              ("y_1",
               (Argument (Int 1))))],
-         Variable "x_1")
+         Variable "x_1",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
 let test_complex () =
   let actual = Ast.Standard.(
-      Program
-        (BinaryExpression
+      ProgramTyped
+        (T_INT,
+         BinaryExpression
            (Plus,
             (LetExpression
                ("x_1",
@@ -305,7 +324,8 @@ let test_complex () =
                   (Variable "unary_expression_5")))));
 
          ],
-         Variable "binary_expression_0")
+         Variable "binary_expression_0",
+         T_INT)
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 

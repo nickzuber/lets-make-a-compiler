@@ -45,8 +45,8 @@ let if_expr =
 let prog2 = Program
     (IfExpression
        ((UnaryExpression (Not, True)),
-        Int 1,
-        Int 0))
+        True,
+        False))
 
 let prog_tons_of_variables = Program
     (pow2 4)

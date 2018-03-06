@@ -83,8 +83,8 @@ let rec select_single_statement (stmt : Flat.statement) (count : int) : Select.i
           let rhs' = arg_of_flat_argument rhs in
           let then_instructions = select consequent_instrs (count + 1) in
           let else_instructions = select alternate_instrs (count + 1) in
-          let label_then = Printf.sprintf "IF_THEN_%d" count in
-          let label_end = Printf.sprintf "IF_END_%d" count in
+          let label_then = Printf.sprintf "then%d" count in
+          let label_end = Printf.sprintf "if_end%d" count in
           [CMPQ (lhs', rhs');
            (JUMP (E, label_then))]
           @ else_instructions

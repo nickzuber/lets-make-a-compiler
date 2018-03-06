@@ -124,6 +124,11 @@ let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (inst
     MOVZBQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.LABEL label -> [LABEL label]
 
+let get_print_function (t : Ast.t) : Assembly.instruction =
+  match t with
+  | T_BOOL -> CALLQ "_print_bool"
+  | T_INT -> CALLQ "_print_int"
+
 let rec assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.instruction list) : Assembly.instruction list =
   match instructions with
   | [] -> []
@@ -144,10 +149,14 @@ let transform (prog : program) : program =
          (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
          (SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp"))] in
       let instructions = assign mapping instructions in
+      let print_function_callq = get_print_function t in
       let prepare_return = (match final_instruction with
           | Select.RET arg ->
             let arg' = arg_of_select_arg mapping arg in
             [MOVQ (arg', REGISTER "rax");
+             MOVQ (REGISTER "rax", REGISTER "rdi");
+             print_function_callq;
+             MOVQ (INT 0, REGISTER "rax");
              LEAVEQ;  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * spilled_variable_size), REGISTER "rsp")` *)
              RETQ (REGISTER "rax")]
           | _ -> raise (Unexpected_argument)) in

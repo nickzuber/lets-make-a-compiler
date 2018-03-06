@@ -1,18 +1,21 @@
-.globl _asm_main
+.globl _main
 
-_asm_main:  
+_main:  
     pushq 	%rbp
     movq 	%rsp, %rbp
     subq 	$0, %rsp
     movq 	$1, %rcx
     xorq 	$1, %rcx
     cmpq 	$1, %rcx
-    je	 	IF_THEN_0
+    je	 	then0
     movq 	$0, %rcx
-    jmp	 	IF_END_0
-IF_THEN_0:
+    jmp	 	if_end0
+then0:
     movq 	$1, %rcx
-IF_END_0:
+if_end0:
     movq 	%rcx, %rax
+    movq 	%rax, %rdi
+    callq 	_print_bool
+    movq 	$0, %rax
     leaveq
     retq

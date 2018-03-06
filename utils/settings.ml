@@ -16,5 +16,8 @@ let use_verbose_tests = true
 (* Kind of like tab space for printing our data structures. *)
 let padding_offset_for_pprint_ast = 2
 
+(* How long the title partition bar is in the terminal output. Normally set to 35. *)
+let length_of_partition_bar = 25
+
 (* Max amount of characters a program can have before we decide not to print it. *)
 let max_characters_to_show = 6000

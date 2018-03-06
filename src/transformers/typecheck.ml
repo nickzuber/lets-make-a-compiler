@@ -20,13 +20,13 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
      | (T_BOOL, c, a) when c = a -> c
      | (T_BOOL, c, a) ->
        raise (Type_error
-                (Printf.sprintf "This expression was given types %s and %s but expected those types to be the same.\n\x1b[91m%s\x1b[49m"
+                (Printf.sprintf "This expression was given types \x1b[1m%s\x1b[0m and \x1b[1m%s\x1b[0m but expected those types to be the same.\n\x1b[91m%s\x1b[49m"
                    (Pprint_ast.string_of_type c)
                    (Pprint_ast.string_of_type a)
                    (Pprint_ast.string_of_expression expr ~padding:4)))
      | (t, _, _) ->
        raise (Type_error
-                (Printf.sprintf "This expression was tested with type %s but expected type bool.\n\x1b[91m%s\x1b[49m"
+                (Printf.sprintf "This expression was tested with type \x1b[1m%s\x1b[0m but expected type bool.\n\x1b[91m%s\x1b[49m"
                    (Pprint_ast.string_of_type t)
                    (Pprint_ast.string_of_expression expr ~padding:4))))
   | BinaryExpression (op, lhs, rhs) ->
@@ -38,7 +38,7 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_INT
        else
          raise (Type_error
-                  (Printf.sprintf "This expression was given types %s and %s but expected types int and int.\n\x1b[91m%s\x1b[49m"
+                  (Printf.sprintf "This expression was given types \x1b[1m%s\x1b[0m and \x1b[1m%s\x1b[0m but expected types int and int.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type lhs_type)
                      (Pprint_ast.string_of_type rhs_type)
                      (Pprint_ast.string_of_expression expr ~padding:4)))
@@ -48,7 +48,7 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_BOOL
        else
          raise (Type_error
-                  (Printf.sprintf "This expression was given types %s and %s but expected types bool and bool.\n\x1b[91m%s\x1b[49m"
+                  (Printf.sprintf "This expression was given types \x1b[1m%s\x1b[0m and \x1b[1m%s\x1b[0m but expected types bool and bool.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type lhs_type)
                      (Pprint_ast.string_of_type rhs_type)
                      (Pprint_ast.string_of_expression expr ~padding:4)))
@@ -57,7 +57,7 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_BOOL
        else
          raise (Type_error
-                  (Printf.sprintf "This expression was given types %s and %s but expected types int and int.\n\x1b[91m%s\x1b[49m"
+                  (Printf.sprintf "This expression was given types \x1b[1m%s\x1b[0m and \x1b[1m%s\x1b[0m but expected types int and int.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type lhs_type)
                      (Pprint_ast.string_of_type rhs_type)
                      (Pprint_ast.string_of_expression expr ~padding:4))))
@@ -69,7 +69,7 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_INT
        else
          raise (Type_error
-                  (Printf.sprintf "This expression was given type %s but expected type int.\n\x1b[91m%s\x1b[49m"
+                  (Printf.sprintf "This expression was given type \x1b[1m%s\x1b[0m but expected type int.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type operand_type)
                      (Pprint_ast.string_of_expression expr ~padding:4)))
      | Not ->
@@ -77,7 +77,7 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
          T_BOOL
        else
          raise (Type_error
-                  (Printf.sprintf "This expression was given type %s but expected type bool.\n\x1b[91m%s\x1b[49m"
+                  (Printf.sprintf "This expression was given type \x1b[1m%s\x1b[0m but expected type bool.\n\x1b[91m%s\x1b[49m"
                      (Pprint_ast.string_of_type operand_type)
                      (Pprint_ast.string_of_expression expr ~padding:4))))
   | Int n -> T_INT

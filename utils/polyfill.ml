@@ -1,5 +1,45 @@
 
-(* Simple Hashtbl wrapper to simulate a hashset. *)
+(* Simple Hashtbl wrapper to implement immutability. *)
+module Immutable_hashtbl : sig
+  type ('a, 'b) t = ('a, 'b) Hashtbl.t
+  val create : int -> ('a, 'b) Hashtbl.t
+  val find : ('a, 'b) Hashtbl.t -> 'a -> 'b
+  val add : ('a, 'b) Hashtbl.t -> 'a -> 'b -> ('a, 'b) Hashtbl.t
+  val remove : ('a, 'b) Hashtbl.t -> 'a -> ('a, 'b) Hashtbl.t
+  val length : ('a, 'b) Hashtbl.t -> int
+  val copy : ('a, 'b) Hashtbl.t -> ('a, 'b) Hashtbl.t
+  val iter : ('a -> 'b -> unit) -> ('a, 'b) Hashtbl.t -> unit
+  val combine : ('a, 'b) Hashtbl.t -> ('a, 'b) Hashtbl.t -> ('a, 'b) Hashtbl.t
+end = struct
+  type ('a, 'b) t = ('a, 'b) Hashtbl.t
+
+  let create n = Hashtbl.create n
+
+  let find tbl k = Hashtbl.find tbl k
+
+  let add tbl k v =
+    let tbl' = Hashtbl.copy tbl in
+    Hashtbl.add tbl' k v;
+    tbl'
+
+  let remove tbl k =
+    let tbl' = Hashtbl.copy tbl in
+    Hashtbl.remove tbl' k;
+    tbl'
+
+  let length tbl = Hashtbl.length tbl
+
+  let copy tbl = Hashtbl.copy tbl
+
+  let iter fn tbl = Hashtbl.iter fn tbl
+
+  let combine t1 t2 =
+    let tbl = Hashtbl.copy t1 in
+    Hashtbl.iter (fun k v -> Hashtbl.add tbl k v) t2;
+    tbl
+end
+
+(* Simple Hashtbl wrapper to simulate an immutable hashset. *)
 module Set : sig
   type 'a t = ('a, unit) Hashtbl.t
   val create : int -> ('a, unit) Hashtbl.t
@@ -10,7 +50,6 @@ module Set : sig
   val remove : ('a, unit) Hashtbl.t -> 'a -> unit
   val add : ('a, unit) Hashtbl.t -> 'a -> unit
   val union : ('a, unit) Hashtbl.t -> ('a, unit) Hashtbl.t -> ('a, unit) Hashtbl.t
-  val length : ('a, unit) Hashtbl.t -> int
   val fold : ('a, unit) Hashtbl.t -> ('a -> 'c -> 'c) -> 'c -> 'c
   val set_of_list : 'a list -> ('a, unit) Hashtbl.t
 end = struct
@@ -44,8 +83,6 @@ end = struct
     let set' = Hashtbl.copy set1 in
     Hashtbl.iter (fun item _ -> if exists set' item then () else Hashtbl.add set' item ()) set2;
     set'
-
-  let length set = Hashtbl.length set
 
   let fold set fn init = Hashtbl.fold (fun k _ acc -> fn k acc) set init
 
@@ -94,3 +131,9 @@ end
 
 (* Create max heap from binary heap functor. *)
 module Max_heap = Binary_heap.Make(Max_heap_components)
+
+(* Given a hashtable, count the number of unique values. *)
+let count_unique tbl : int =
+  let s = Set.create 53 in
+  Hashtbl.iter (fun _k v -> Set.add s v) tbl;
+  Set.size s

@@ -9,7 +9,7 @@ let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
   | Flat.Int n -> INT n
   | Flat.Variable v -> VARIABLE v
 
-let rec select_single_statement (stmt : Flat.statement) (count : int) : Select.instruction list = Flat.(
+let rec select_single_statement (stmt : Flat.statement) : Select.instruction list = Flat.(
     match stmt with
     | Assignment (var, expr) -> (match expr with
         | Argument arg ->
@@ -78,33 +78,24 @@ let rec select_single_statement (stmt : Flat.statement) (count : int) : Select.i
                    MOVZBQ ((BYTE_REGISTER "al"), var')])))
     | IfStatement (test, consequent_instrs, alternate_instrs) -> (match test with
         | BinaryExpression ((Compare cmp), lhs, rhs) ->
-          (* I'm going to assume cmp is always Equal since `if` is implemented with naive method. *)
           let lhs' = arg_of_flat_argument lhs in
           let rhs' = arg_of_flat_argument rhs in
-          let then_instructions = select consequent_instrs (count + 1) in
-          let else_instructions = select alternate_instrs (count + 1) in
-          let label_then = Printf.sprintf "then%d" count in
-          let label_end = Printf.sprintf "if_end%d" count in
-          [CMPQ (lhs', rhs');
-           (JUMP (E, label_then))]
-          @ else_instructions
-          @ [JUMP (Always, label_end)]
-          @ [LABEL label_then]
-          @ then_instructions
-          @ [LABEL label_end]
+          let then_instructions = select consequent_instrs  in
+          let else_instructions = select alternate_instrs in
+          [IF_STATEMENT (CMPQ (lhs', rhs'), then_instructions, else_instructions)]
         | _ -> raise Unhandled_if_test_expression))
 
-and select (stmts : Flat.statement list) (count : int) : Select.instruction list =
+and select (stmts : Flat.statement list) : Select.instruction list =
   match stmts with
   | [] -> []
-  | stmt :: [] -> select_single_statement stmt count
-  | stmt :: rest -> (select_single_statement stmt count) @ (select rest count)
+  | stmt :: [] -> select_single_statement stmt
+  | stmt :: rest -> (select_single_statement stmt) @ (select rest)
 
 (* Given a flattened program, produce a program that's like assembly, but we still have variable names. *)
 let transform (prog : program) : program =
   let (t, (vars, instructions, final_instruction)) = match prog with
     | FlatProgram (vars, stmts, arg, t) ->
-      let instrs = select stmts 0 in
+      let instrs = select stmts in
       (* The final flat program argument is the result of running this program. *)
       let final_instr = arg_of_flat_argument arg in
       (t, (vars, instrs, RET final_instr))

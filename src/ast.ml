@@ -64,6 +64,7 @@ module rec Select : sig
     | REGISTER of string
     | BYTE_REGISTER of string
   type instruction =
+    | IF_STATEMENT of instruction * instruction list * instruction list
     | ADD of arg * arg
     | SUB of arg * arg
     | MOV of arg * arg

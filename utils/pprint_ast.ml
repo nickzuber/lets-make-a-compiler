@@ -1,6 +1,7 @@
 open Ast
 
 exception Bad_set_instruction
+exception Probably_bad_stuff of string
 
 let padding_offset = Settings.padding_offset_for_pprint_ast
 
@@ -101,11 +102,15 @@ and string_of_statements ?(padding=0) ?(title="Statements") stmts : string = Ast
         acc ^ "\n" ^ str) "" stmts in
     start ^ statements)
 
-and string_of_instructions ?(padding=0) instructions : string = Ast.Select.(
+and string_of_instructions ?(padding=0) ?(title="") instructions : string = Ast.Select.(
+    let start = if title = "" then
+        ""
+      else
+        Printf.sprintf "\x1b[90m%s%s:\x1b[39m" (build_offset padding) title in
     let instructions_string = List.fold_left (fun acc instr ->
         let str = string_of_instruction instr ~padding:(padding + padding_offset) in
         acc ^ "\n" ^ str) "" instructions in
-    (build_offset padding) ^ instructions_string)
+    (build_offset padding) ^ start ^ instructions_string)
 
 and string_of_assembly_instructions ?(padding=0) instructions : string = Ast.Assembly.(
     let instructions_string = List.fold_left (fun acc instr ->
@@ -137,53 +142,68 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
 
 and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
     match instruction with
+    | IF_STATEMENT (t, c, a) ->
+      Printf.sprintf "%sIF_STATEMENT\n\
+                      %s\x1b[90mtest:\x1b[39m\n%s\
+                      %s\n%s\x1b[90mthen:\x1b[39m%s\
+                      %s\n%s\x1b[90melse:\x1b[39m%s\
+                      %s"
+        (build_offset padding)
+        (build_offset padding)
+        (build_offset (padding + padding_offset)) (string_of_instruction t)
+        (build_offset padding)
+        (build_offset padding)
+        (string_of_instructions c ~padding:(padding))
+        (build_offset padding)
+        (build_offset padding)
+        (string_of_instructions a ~padding:(padding))
     | ADD (a, b) ->
-      Printf.sprintf "%saddq %s, %s"
+      Printf.sprintf "%sADD \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
     | MOV (a, b) ->
-      Printf.sprintf "%smovq %s, %s"
+      Printf.sprintf "%sMOV \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
     | CALL l ->
-      Printf.sprintf "%scallq %s"
+      Printf.sprintf "%sCALL \t%s"
         (build_offset padding)
         l
     | NEG a ->
-      Printf.sprintf "%snegq %s"
+      Printf.sprintf "%sNEG \t%s"
         (build_offset padding)
         (string_of_arg a)
     | RET a ->
-      Printf.sprintf "%sretq %s"
+      Printf.sprintf "%sRET \t%s"
         (build_offset padding)
         (string_of_arg a)
     | PUSH a ->
-      Printf.sprintf "%spushq %s"
+      Printf.sprintf "%sPUSH \t%s"
         (build_offset padding)
         (string_of_arg a)
     | POP a ->
-      Printf.sprintf "%spopq %s"
+      Printf.sprintf "%sPOP \t%s"
         (build_offset padding)
         (string_of_arg a)
     | SUB (a, b) ->
-      Printf.sprintf "%ssubq %s, %s"
+      Printf.sprintf "%sSUB \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
     | XORQ (a, b) ->
-      Printf.sprintf "%sxorq %s, %s"
+      Printf.sprintf "%sXOR \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
     | CMPQ (a, b) ->
-      Printf.sprintf "%scmpq %s, %s"
+      Printf.sprintf "%sCMP \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
     | MOVZBQ (a, b) ->
-      Printf.sprintf "%smovzbq %s, %s"
+      Printf.sprintf "%sMOVZB \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
@@ -203,21 +223,21 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
 
 and string_of_set_instr cc = Ast.Select.(
     match cc with
-    | E -> "sete"
-    | G -> "setg"
-    | L -> "setl"
-    | GE -> "setge"
-    | LE -> "setle"
+    | E -> "SET[E]"
+    | G -> "SET[G]"
+    | L -> "SET[L]"
+    | GE -> "SET[GE]"
+    | LE -> "SET[LE]"
     | Always -> (raise Bad_set_instruction))
 
 and string_of_jump_instr cc = Ast.Select.(
     match cc with
-    | E -> "je"
-    | G -> "jg"
-    | L -> "jl"
-    | GE -> "jge"
-    | LE -> "jle"
-    | Always -> "je")
+    | E -> "JUMP[E]"
+    | G -> "JUMP[G]"
+    | L -> "JUMP[L]"
+    | GE -> "JUMP[GE]"
+    | LE -> "JUMP[LE]"
+    | Always -> "JUMP[-]")
 
 and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assembly.(
     match instruction with
@@ -381,13 +401,13 @@ let make_dashes len : string =
 
 let display title : unit =
   let title_len = String.length title in
-  let amt_of_dashes = 35 - (title_len / 2) in
+  let amt_of_dashes = Settings.length_of_partition_bar - (title_len / 2) in
   let end_dashes = make_dashes amt_of_dashes in
   Printf.printf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m%s\x1b[39m %s" title end_dashes Emoji.herb
 
 let create_title title : string =
   let title_len = String.length title in
-  let amt_of_dashes = 35 - (title_len / 2) in
+  let amt_of_dashes = Settings.length_of_partition_bar - (title_len / 2) in
   let end_dashes = make_dashes amt_of_dashes in
   Printf.sprintf "\n\x1b[36m=-=-\x1b[39m \x1b[1m%s\x1b[0m \x1b[36m%s\x1b[39m %s" title end_dashes Emoji.herb
 
@@ -405,8 +425,7 @@ let print_matrix m ts=
       Printf.printf "└%s┘\n" spacing));
   Printf.printf "\x1b[90m(naive) %s\x1b[39m\n" (Time.format ts)
 
-let print_string_of_graph g ts = Polyfill.(
-    let i = ref 0 in
+let print_string_of_graph g c ts = Polyfill.(
     let colors =
       [|"\x1b[31m";
         "\x1b[32m";
@@ -427,36 +446,29 @@ let print_string_of_graph g ts = Polyfill.(
         "\x1b[104m";
         "\x1b[105m";
         "\x1b[90m"|] in
-    let tbl = Hashtbl.create (Array.length colors) in
     Interference_graph.G.iter_edges (fun v1 v2 ->
-        let l1 = string_of_arg (Interference_graph.G.V.label v1)
-        and l2 = string_of_arg (Interference_graph.G.V.label v2) in
-        let color1 =
-          if Settings.use_color_coded_graph = false then "" else
-            (try Hashtbl.find tbl l1 with | Not_found ->
-               (if !i < (Array.length colors) then
-                  (let c = colors.(!i) in
-                   i := !i + 1;
-                   Hashtbl.add tbl l1 c;
-                   c)
-                else
-                  ""))
-        and color2 =
-          if Settings.use_color_coded_graph = false then "" else
-            (try Hashtbl.find tbl l2 with | Not_found ->
-               (if !i < (Array.length colors) then
-                  (let c = colors.(!i) in
-                   i := !i + 1;
-                   Hashtbl.add tbl l2 c;
-                   c)
-                else
-                  "")) in
+        let a1 = (Interference_graph.G.V.label v1) in
+        let a2 = (Interference_graph.G.V.label v2) in
+        let l1 = string_of_arg a1 in
+        let l2 = string_of_arg a2 in
+        let c1 = Hashtbl.find c a1 in
+        let c2 = Hashtbl.find c a2 in
+        let color1 = if Settings.use_color_coded_graph = false then "" else colors.(c1) in
+        let color2 = if Settings.use_color_coded_graph = false then "" else colors.(c2) in
         Printf.printf "%s%s\x1b[39;49m <-> %s%s\x1b[39;49m\n" color1 l1 color2 l2) g)
 
-let print_graph g n ts = Polyfill.(
+let print_graph g c n ts = Polyfill.(
     Printf.printf "\n[\x1b[1mInterference Graph Edges\x1b[0m]\n";
+    Printf.printf "\x1b[90m(coloring) %d\x1b[39m\n" (count_unique c);
     if n > 50 then
       print_endline "Too long to show."
     else
-      (print_string_of_graph g ts);
+      (try
+         (print_string_of_graph g c ts)
+       with Invalid_argument _ ->
+         let s = count_unique c in
+         let msg = Printf.sprintf "With the tests you're running, the \
+                                   coloring should never get this high (it was %d). \
+                                   Something is probably wrong with your saturation." s in
+         raise (Probably_bad_stuff msg));
     Printf.printf "\x1b[90m(graph) %s\x1b[39m\n" (Time.format ts))

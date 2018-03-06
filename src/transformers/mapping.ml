@@ -8,8 +8,14 @@ let naive_interference_ts = ref 0.
 let graph_interference_ts = ref 0.
 
 module rec Liveness_mapping : sig
-  type t = (Select.instruction, Select.arg Set.t) Hashtbl.t
+  (* An instruction mapped to a set of variables that are live at that instruction. *)
+  type t = (Select.instruction, Liveness.t) Hashtbl.t
 end = Liveness_mapping
+
+and Liveness : sig
+  (* A set of variables which are considered live. *)
+  type t = Select.arg Set.t
+end = Liveness
 
 (* Mapping of int to general purpose registers. *)
 let int_to_valid_register = Hashtbl.create 8
@@ -65,37 +71,52 @@ let get_read_args (instr : Select.instruction) : Select.arg list =
   | _ -> []
 
 (* Get the arguments that are considered for writes that are variables. *)
-let get_write_variables (instr : Select.instruction) : Select.arg Set.t =
+let get_write_variables (instr : Select.instruction) : Liveness.t =
   instr |> get_write_args |> List.filter (fun arg ->
       match arg with
       | Select.VARIABLE _ -> true
       | _ -> false) |> Set.set_of_list
 
 (* Get the arguments that are considered for reads that are variables. *)
-let get_read_variables (instr : Select.instruction) : Select.arg Set.t =
+let get_read_variables (instr : Select.instruction) : Liveness.t =
   instr |> get_read_args |> List.filter (fun arg ->
       match arg with
       | Select.VARIABLE _ -> true
       | _ -> false) |> Set.set_of_list
 
-let build_liveness_mapping (instructions : Select.instruction list) : Liveness_mapping.t =
-  let variable_size = List.length instructions in
-  let empty_liveness = Set.create 0 in
-  let mapping = Hashtbl.create variable_size in
-  let rec assign instrs previous_liveness : unit =
-    match instrs with
-    | [] -> ()
-    | instr :: rest ->
-      let write_variables = get_write_variables instr in
-      let read_variables = get_read_variables instr in
-      (* Take previous liveness, subtract the stuff we write, add the stuff we read *)
-      let liveness = Set.union (Set.difference previous_liveness write_variables) read_variables in
-      Hashtbl.add mapping instr liveness;
-      assign rest liveness in
-  (* We want to iterate backwards to compute liveness. *)
+(* Compute the liveness at some isntruction and add it to the given mapping. *)
+let rec compute_liveness (instr : Select.instruction) (mapping : (Select.instruction, Liveness.t) Immutable_hashtbl.t) (previous_liveness : Liveness.t) =
+  match instr with
+  | Select.IF_STATEMENT (t, c_instrs, a_instrs) ->
+    let (c_mapping, c_previous_liveness) = build_liveness_mapping c_instrs previous_liveness in
+    let (a_mapping, a_previous_liveness) = build_liveness_mapping a_instrs previous_liveness in
+    (* NOTE: will probably need to add vars from `t` instruction *)
+    let liveness = Set.union c_previous_liveness a_previous_liveness in
+    let mapping' = Immutable_hashtbl.combine c_mapping a_mapping in
+    let mapping'' = Immutable_hashtbl.add mapping' instr liveness in
+    (mapping'', liveness)
+  | _ ->
+    let write_variables = get_write_variables instr in
+    let read_variables = get_read_variables instr in
+    (* Take previous liveness, subtract the stuff we write, add the stuff we read *)
+    let liveness = Set.union (Set.difference previous_liveness write_variables) read_variables in
+    Printf.printf "";
+    let mapping' = Immutable_hashtbl.add mapping instr liveness in
+    (mapping', liveness)
+
+and build_liveness_mapping instructions previous_liveness =
   let reversed_instructions = List.rev instructions in
-  assign reversed_instructions empty_liveness;
-  mapping
+  let size = List.length instructions in
+  let mapping = Immutable_hashtbl.create size in
+  (* Iterate through instructions, return the last previous_liveness at the end. *)
+  let rec assign instrs mapping previous_liveness =
+    match instrs with
+    | [] -> (mapping, previous_liveness)
+    | instr :: rest ->
+      let (mapping', previous_liveness') = compute_liveness instr mapping previous_liveness in
+      assign rest mapping' previous_liveness' in
+  let (mapping', final_liveness) = assign reversed_instructions mapping previous_liveness in
+  (mapping', final_liveness)
 
 let register_of_variable (var : Select.arg) rsp_offset coloring : Assembly.arg =
   let i = Hashtbl.find coloring var in
@@ -111,12 +132,6 @@ let register_of_variable (var : Select.arg) rsp_offset coloring : Assembly.arg =
     let offset = ((starting_point + rsp_offset) * -8) in
     let rsp_register_with_offset = REFERENCE ("rbp", offset) in
     rsp_register_with_offset
-
-(* Given a hashtable, count the number of unique values. *)
-let count_unique tbl : int =
-  let s = Set.create 53 in
-  Hashtbl.iter (fun _k v -> Set.add s v) tbl;
-  Set.size s
 
 (* Create a mapping from variables to registers, then return the leftover variables and the mapping. *)
 let build_variable_to_register_mapping (vars : string list) (coloring : (Select.arg, int) Hashtbl.t) : (string, Assembly.arg) Hashtbl.t * int =
@@ -181,7 +196,7 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : I
   graph
 
 (* From a hashmap of variables to saturation sets, find the variable with the highest saturation. *)
-let get_variable_with_max_saturation (var_to_sat_and_adj : (Select.arg, int Set.t * Select.arg Set.t) Hashtbl.t) : Select.arg * (int Set.t * Select.arg Set.t) =
+let get_variable_with_max_saturation (var_to_sat_and_adj : (Select.arg, int Set.t * Liveness.t) Hashtbl.t) : Select.arg * (int Set.t * Liveness.t) =
   let maybe_max = Hashtbl.fold (fun k v prev ->
       match prev with
       | Some (k', (sat', adj')) ->
@@ -236,7 +251,9 @@ let saturate (graph : Interference_graph.G.t) : (Select.arg, int) Hashtbl.t =
 (* Create a mapping between variable names (strings) to registers (memory offsets are included).
  * This is used by assign to turn our Select program into an Assembly program. *)
 let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
-  let liveness_mapping = build_liveness_mapping instructions in
+  (* We want to iterate backwards to compute liveness. *)
+  let empty_liveness = Set.create 0 in
+  let (liveness_mapping, _final_liveness) = build_liveness_mapping instructions empty_liveness in
   let liveness_graph = build_liveness_graph vars liveness_mapping in
   let coloring = saturate liveness_graph in
   (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
@@ -248,5 +265,5 @@ let create (vars : string list) (instructions : Select.instruction list) : (stri
     (let liveness_matrix = build_liveness_matrix vars liveness_mapping in
      Pprint_ast.print_matrix liveness_matrix !naive_interference_ts);
   if Settings.debug_mode = false then () else
-    Pprint_ast.print_graph liveness_graph (List.length vars) !graph_interference_ts;
+    Pprint_ast.print_graph liveness_graph coloring (List.length vars) !graph_interference_ts;
   (mapping, spill_size)

@@ -33,6 +33,12 @@ let compare_expr =
       (Read),
       (Int 1)))
 
+let binary_expr =
+  (BinaryExpression
+     (Plus,
+      Int 1,
+      Int 1))
+
 let if_expr =
   (IfExpression
      ((BinaryExpression
@@ -44,12 +50,12 @@ let if_expr =
 
 let prog2 = Program
     (IfExpression
-       ((UnaryExpression (Not, True)),
-        True,
-        False))
+       ((UnaryExpression (Not, False)),
+        (pow2 5),
+        (pow2 3)))
 
 let prog_tons_of_variables = Program
-    (pow2 4)
+    (pow2 3)
 
 let _ =
   try
@@ -66,6 +72,9 @@ let _ =
     |> print_endline
   | Type_error reason ->
     display_error "Type Error" reason
+    |> print_endline
+  | Probably_bad_stuff reason ->
+    display_error "Probably Bad Stuff" reason
     |> print_endline
   | _ as e ->
     display_error "Unknown_error" "Caught an unhandled error"

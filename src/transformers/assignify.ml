@@ -8,6 +8,12 @@ exception Unexpected_argument
 let register_of_variable (mapping : (string, Assembly.arg) Hashtbl.t) (var : string) : Assembly.arg =
   Hashtbl.find mapping var
 
+(* Call the correct function based on the return type of the program. *)
+let get_print_function (t : Ast.t) : Assembly.instruction =
+  match t with
+  | T_BOOL -> CALLQ "_print_bool"
+  | T_INT -> CALLQ "_print_int"
+
 (* Take a Select arg and creates a Assembly arg from it. This accounts for the variable mapping. *)
 let arg_of_select_arg (mapping : (string, Assembly.arg) Hashtbl.t) (arg : Select.arg) : Assembly.arg =
   match arg with
@@ -24,7 +30,6 @@ let cc_of_select_cc (cc : Select.cc) : Assembly.cc =
   | Select.GE -> GE
   | Select.LE -> LE
   | Select.Always -> Always
-
 
 (* If both arguments reference memory, make a fix so that doesn't happen.
  * If we try to compare two INT's, we need to make the last arg a register.
@@ -54,7 +59,7 @@ let fix_illegal_instruction_combinations (instruction : Assembly.instruction) : 
     [XORQ (INT m, reg)]
   | _ -> [instruction]
 
-let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =
+let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =
   match instruction with
   | Select.ADD (src, dest) ->
     let src' = arg_of_select_arg mapping src in
@@ -123,13 +128,21 @@ let assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (inst
     let dest' = arg_of_select_arg mapping dest in
     MOVZBQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.LABEL label -> [LABEL label]
+  | Select.IF_STATEMENT (t, c, a) ->
+    let t_instr = assign_single_instruction mapping t in
+    let c_instrs = assign mapping c in
+    let a_instrs = assign mapping a in
+    let label_then = Printf.sprintf "then%d" 0 in
+    let label_end = Printf.sprintf "if_end%d" 0 in
+    t_instr
+    @ [(JUMP (E, label_then))]
+    @ c_instrs
+    @ [JUMP (Always, label_end)]
+    @ [LABEL label_then]
+    @ a_instrs
+    @ [LABEL label_end]
 
-let get_print_function (t : Ast.t) : Assembly.instruction =
-  match t with
-  | T_BOOL -> CALLQ "_print_bool"
-  | T_INT -> CALLQ "_print_int"
-
-let rec assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.instruction list) : Assembly.instruction list =
+and assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.instruction list) : Assembly.instruction list =
   match instructions with
   | [] -> []
   | instruction :: [] -> assign_single_instruction mapping instruction

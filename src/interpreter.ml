@@ -34,8 +34,7 @@ let rec interp (expr : expression) (env : (string, result) Hashtbl.t) : result =
          | Equal -> R_BOOL (a = b)
          | GreaterThan -> R_BOOL (a > b)
          | LessThan -> R_BOOL (a < b))
-     | _ -> raise Bad_program
-    )
+     | _ -> raise Bad_program)
   | UnaryExpression (op, operand) ->
     let operand' = interp operand env in
     (match (op, operand') with

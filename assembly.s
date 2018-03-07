@@ -6,36 +6,23 @@ _main:
     subq 	$0, %rsp
     movq 	$1, %rax
     cmpq 	$1, %rax
-    je	 	then11
+    je	 	then16
+    movq 	$0, %rcx
+    jmp	 	if_end16
+then16:
+    movq 	$21, %rcx
     movq 	$1, %rax
     cmpq 	$0, %rax
-    je	 	then14
-    movq 	$5, %rcx
-    jmp	 	if_end14
-then14:
-    movq 	$4, %rcx
-if_end14:
+    je	 	then17
     movq 	%rcx, %rcx
-    jmp	 	if_end11
-then11:
-    movq 	$1, %rax
-    cmpq 	$0, %rax
-    je	 	then12
-    movq 	$1, %rax
-    cmpq 	$0, %rax
-    je	 	then13
-    movq 	$3, %rcx
-    jmp	 	if_end13
-then13:
-    movq 	$2, %rcx
-if_end13:
+    addq 	$1, %rcx
     movq 	%rcx, %rcx
-    jmp	 	if_end12
-then12:
-    movq 	$1, %rcx
-if_end12:
+    jmp	 	if_end17
+then17:
+    movq 	$0, %rcx
+if_end17:
     movq 	%rcx, %rcx
-if_end11:
+if_end16:
     movq 	%rcx, %rax
     movq 	%rax, %rdi
     callq 	_print_int

@@ -108,6 +108,34 @@ let test_really_nested_if () =
             Int 5))))
   |> Runner.test_output
 
+let test_if_let () =
+  Program
+    (IfExpression
+       (True,
+        (LetExpression
+           ("x",
+            (Int 21),
+            (Variable "x"))),
+        Int 0))
+  |> Runner.test_output
+
+let test_if_let_if () =
+  Program
+    (IfExpression
+       (True,
+        (LetExpression
+           ("x",
+            (Int 21),
+            (IfExpression
+               (False,
+                Int 0,
+                (BinaryExpression
+                   (Plus,
+                    Variable "x",
+                    Int 1)))))),
+        Int 0))
+  |> Runner.test_output
+
 let main () = Runner.(
     print_endline ("\n[\x1b[1mcontrol\x1b[0m]");
     run test_if_true "if true" "";
@@ -120,4 +148,6 @@ let main () = Runner.(
     run test_nested_if_true_gt "nested if greaterthan" "";
     run test_nested_if_false "nested if false" "";
     run test_really_nested_if "very nested if" "";
+    run test_if_let "if w/ let" "";
+    run test_if_let_if "let w/ if" "";
   )

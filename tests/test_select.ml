@@ -65,38 +65,9 @@ let test_binop1 () =
     ) in
   assert_equal actual expect ~pp_diff:Runner.pprint_diff
 
-let test_binop2 () =
-  raise Runner.Unimplemented_testcase
-
-let test_unnop () =
-  raise Runner.Unimplemented_testcase
-
-let test_unnop_nested () =
-  raise Runner.Unimplemented_testcase
-
-let test_letexpr1 () =
-  raise Runner.Unimplemented_testcase
-
-let test_letexpr2 () =
-  raise Runner.Unimplemented_testcase
-
-let test_letexpr_nested_diff_name () =
-  raise Runner.Unimplemented_testcase
-
-let test_complex () =
-  raise Runner.Unimplemented_testcase
-
-
 let main () = Runner.(
     print_endline ("\n[\x1b[1mselect\x1b[0m]");
     run test_int "int" "Should have no instructions besides returning 2";
     run test_read "read" "Should call read and store it";
     run test_binop1 "binary expression" "";
-    run test_binop2 "nested binary expression" "";
-    run test_unnop "unary expression" "";
-    run test_unnop_nested "nested unary expression" "";
-    run test_letexpr1 "let expression simple" "";
-    run test_letexpr2 "let expression binop" "";
-    run test_letexpr_nested_diff_name "let expression x and y" "";
-    run test_complex "complex expression" "";
   )

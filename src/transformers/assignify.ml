@@ -4,6 +4,12 @@ open Ast.Assembly
 exception Incorrect_step of string
 exception Unexpected_argument
 
+(* Global ID generator module. *)
+module Dangerous_guid = struct
+  let _id = ref (-1)
+  let get () = _id := (!_id + 1); !_id
+end
+
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
 let register_of_variable (mapping : (string, Assembly.arg) Hashtbl.t) (var : string) : Assembly.arg =
   Hashtbl.find mapping var
@@ -59,7 +65,7 @@ let fix_illegal_instruction_combinations (instruction : Assembly.instruction) : 
     [XORQ (INT m, reg)]
   | _ -> [instruction]
 
-let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) : Assembly.instruction list =
+let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (instruction : Select.instruction) (count : int) : Assembly.instruction list =
   match instruction with
   | Select.ADD (src, dest) ->
     let src' = arg_of_select_arg mapping src in
@@ -129,24 +135,25 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
     MOVZBQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.LABEL label -> [LABEL label]
   | Select.IF_STATEMENT (t, c, a) ->
-    let t_instr = assign_single_instruction mapping t in
-    let c_instrs = assign mapping c in
-    let a_instrs = assign mapping a in
-    let label_then = Printf.sprintf "then%d" 0 in
-    let label_end = Printf.sprintf "if_end%d" 0 in
+    let count = Dangerous_guid.get () in
+    let t_instr = assign_single_instruction mapping t count in
+    let then_instrs = assign mapping c count in
+    let else_instrs = assign mapping a count in
+    let label_then = Printf.sprintf "then%d" count in
+    let label_end = Printf.sprintf "if_end%d" count in
     t_instr
     @ [(JUMP (E, label_then))]
-    @ c_instrs
+    @ else_instrs
     @ [JUMP (Always, label_end)]
     @ [LABEL label_then]
-    @ a_instrs
+    @ then_instrs
     @ [LABEL label_end]
 
-and assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.instruction list) : Assembly.instruction list =
+and assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.instruction list) (count : int) : Assembly.instruction list =
   match instructions with
   | [] -> []
-  | instruction :: [] -> assign_single_instruction mapping instruction
-  | instruction :: rest -> (assign_single_instruction mapping instruction) @ (assign mapping rest)
+  | instruction :: [] -> assign_single_instruction mapping instruction count
+  | instruction :: rest -> (assign_single_instruction mapping instruction count) @ (assign mapping rest count)
 
 (* NOTE: `retq` should always return $rax, otherwise you have an error. *)
 (* Given a program of variables and assembly instructions, produce a valid assembly program. *)
@@ -161,7 +168,7 @@ let transform (prog : program) : program =
         [(PUSHQ (REGISTER "rbp"));
          (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
          (SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp"))] in
-      let instructions = assign mapping instructions in
+      let instructions = assign mapping instructions 0 in
       let print_function_callq = get_print_function t in
       let prepare_return = (match final_instruction with
           | Select.RET arg ->

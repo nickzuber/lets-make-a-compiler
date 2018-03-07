@@ -273,12 +273,39 @@ let test_saturation_many_many_vars () = Ast.Select.(
       print_string_of_graph liveness_graph coloring (List.length vars);
       (raise e))
 
+let test_saturation_branching () = Ast.Standard.(
+    (* When we have a `pow2 n` program, the highest color should be `n-1` *)
+    let expected_highest_color = 6 in
+    let prog = Program
+        (IfExpression
+           ((UnaryExpression (Not, False)),
+            (pow2 (expected_highest_color + 1)),
+            (pow2 (expected_highest_color + 1)))) in
+    let (vars, instructions) = select_vars_and_instructions_of_program prog in
+    let empty_liveness = Set.create 0 in
+    let (liveness_mapping, _) = build_liveness_mapping instructions empty_liveness in
+    let liveness_graph = build_liveness_graph vars liveness_mapping in
+    let coloring = saturate liveness_graph in
+    let highest_color = ref 0 in
+    try
+      (* not sure best way to do these tests yet *)
+      Hashtbl.iter (fun _arg c ->
+          highest_color := if !highest_color < c then c else !highest_color) coloring;
+      assert_equal !highest_color (expected_highest_color)
+    with
+    | _ as e ->
+      print_endline "";
+      Printf.printf "Expected highest color of %d and got %d\n" expected_highest_color !highest_color;
+      let coloring = saturate liveness_graph in
+      print_string_of_graph liveness_graph coloring (List.length vars);
+      (raise e))
+
 let main () = Runner.(
     print_endline ("\n[\x1b[1mliveness\x1b[0m]");
     run test_class_example "class example" "";
     run test_custom "many vars, low overlap" "Should be small";
-    (* run test_interference_graph "interference graph" "";
-       run test_saturation "saturation, class example" "";
-       run test_saturation_many_vars "saturation, many vars" "";
-       run test_saturation_many_many_vars "saturation, tons more vars" "" *)
-  )
+    run test_interference_graph "interference graph" "";
+    run test_saturation "saturation, class example" "";
+    run test_saturation_many_vars "saturation, many vars" "";
+    run test_saturation_many_many_vars "saturation, tons more vars" "";
+    run test_saturation_branching "saturation, branching" "")

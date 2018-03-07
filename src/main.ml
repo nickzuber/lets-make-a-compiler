@@ -50,9 +50,18 @@ let if_expr =
 
 let prog2 = Program
     (IfExpression
-       ((UnaryExpression (Not, False)),
-        (pow2 5),
-        (pow2 3)))
+       (True,
+        (IfExpression
+           (False,
+            Int 1,
+            (IfExpression
+               (False,
+                Int 2,
+                Int 3)))),
+        (IfExpression
+           (False,
+            Int 4,
+            Int 5))))
 
 let prog_tons_of_variables = Program
     (pow2 3)

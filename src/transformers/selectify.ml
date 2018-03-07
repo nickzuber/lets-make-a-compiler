@@ -82,7 +82,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
           let rhs' = arg_of_flat_argument rhs in
           let then_instructions = select consequent_instrs  in
           let else_instructions = select alternate_instrs in
-          [IF_STATEMENT (CMPQ (lhs', rhs'), then_instructions, else_instructions)]
+          [IF_STATEMENT (CMPQ (rhs', lhs'), then_instructions, else_instructions)]
         | _ -> raise Unhandled_if_test_expression))
 
 and select (stmts : Flat.statement list) : Select.instruction list =

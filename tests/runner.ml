@@ -1,3 +1,7 @@
+open OUnit
+
+open Ast
+open Ast.Standard
 open Pprint_ast
 
 exception Unimplemented_testcase
@@ -25,6 +29,12 @@ let pprint_diff_verbose _formatter results =
 let pprint_diff_quiet _formatter results = ()
 
 let pprint_diff = if Settings.use_verbose_tests then pprint_diff_verbose else pprint_diff_quiet
+
+let test_output prog =
+  let expect = Interpreter.parse prog in
+  let actual = Optimistic_compiler.compile_and_run prog in
+  let msg = Printf.sprintf "expected %s but got %s" expect actual in
+  assert_equal actual expect ~msg:msg
 
 let run test name desc =
   try

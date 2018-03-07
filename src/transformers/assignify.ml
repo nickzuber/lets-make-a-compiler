@@ -157,11 +157,11 @@ and assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.i
 
 (* NOTE: `retq` should always return $rax, otherwise you have an error. *)
 (* Given a program of variables and assembly instructions, produce a valid assembly program. *)
-let transform (prog : program) : program =
+let transform ?(quiet=false) (prog : program) : program =
   let (t, instructions) = match prog with
     | SelectProgram (t, vars, instructions, final_instruction) ->
       (* The spilled variable size is used for offsetting the stack pointer. *)
-      let mapping, spilled_variable_size = Mapping.create vars instructions in
+      let mapping, spilled_variable_size = Mapping.create vars instructions ~quiet:quiet in
       let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
       (* Push stack pointer down far enough to store a variable in each memory location. *)
       let prepare_memory =

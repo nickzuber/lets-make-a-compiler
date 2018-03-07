@@ -250,7 +250,7 @@ let saturate (graph : Interference_graph.G.t) : (Select.arg, int) Hashtbl.t =
 
 (* Create a mapping between variable names (strings) to registers (memory offsets are included).
  * This is used by assign to turn our Select program into an Assembly program. *)
-let create (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
+let create ?(quiet=false) (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
   (* We want to iterate backwards to compute liveness. *)
   let empty_liveness = Set.create 0 in
   let (liveness_mapping, _final_liveness) = build_liveness_mapping instructions empty_liveness in
@@ -264,6 +264,6 @@ let create (vars : string list) (instructions : Select.instruction list) : (stri
   if Settings.compute_liveness_matrix then
     (let liveness_matrix = build_liveness_matrix vars liveness_mapping in
      Pprint_ast.print_matrix liveness_matrix !naive_interference_ts);
-  if Settings.debug_mode = false then () else
+  if Settings.debug_mode = false || quiet = true then () else
     Pprint_ast.print_graph liveness_graph coloring (List.length vars) !graph_interference_ts;
   (mapping, spill_size)

@@ -30,6 +30,7 @@ clean:
 	$(OCB) -clean
 	rm -f runtime/*.o
 	rm -f ./program
+	rm -f ./testing_program
 	rm -f ./assembly.s
 
 .PHONY: all run build build-test test try clean

@@ -7,7 +7,7 @@ let compile (prog : program) : program =
   |> Typecheck.transform
   |> Flatten.transform
   |> Selectify.transform
-  |> Assignify.transform
+  |> Assignify.transform ~quiet:true
 
 (* Compiles the program decorated with print messages *)
 let compile_and_debug (prog : program) : program =

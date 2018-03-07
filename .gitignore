@@ -5,6 +5,7 @@ _build
 *.o
 *.out
 program
+testing_program
 
 # Others
 .DS_Store

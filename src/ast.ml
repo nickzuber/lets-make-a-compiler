@@ -73,10 +73,10 @@ module rec Select : sig
     | RET of arg
     | PUSH of arg
     | POP of arg
-    | XORQ of arg * arg
-    | CMPQ of arg * arg
+    | XOR of arg * arg
+    | CMP of arg * arg
     | SET of cc * arg (* cc, byte-register *)
-    | MOVZBQ of arg * arg (* byte-register, register *)
+    | MOVZB of arg * arg (* byte-register, register *)
     | JUMP of cc * string (* cc, label *)
     | LABEL of string (* label *)
 end = Select

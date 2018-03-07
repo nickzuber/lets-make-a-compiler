@@ -26,7 +26,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
               let src = arg_of_flat_argument arg in
               let dest = VARIABLE var in
               [MOV (src, dest);
-               XORQ (dest, INT 1)]
+               XOR (dest, INT 1)]
             | Minus ->
               let src = arg_of_flat_argument arg in
               let dest = VARIABLE var in
@@ -43,46 +43,46 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
               let lhs' = arg_of_flat_argument lhs in
               let rhs' = arg_of_flat_argument rhs in
               let var' = VARIABLE var in
-              [CMPQ (lhs', rhs');
+              [CMP (lhs', rhs');
                SET (E, (BYTE_REGISTER "al"));
-               MOVZBQ ((BYTE_REGISTER "al"), var')]
+               MOVZB ((BYTE_REGISTER "al"), var')]
             | Or ->
               (* Not done, same as AND at the moment. *)
               let lhs' = arg_of_flat_argument lhs in
               let rhs' = arg_of_flat_argument rhs in
               let var' = VARIABLE var in
-              [CMPQ (lhs', rhs');
+              [CMP (lhs', rhs');
                SET (E, (BYTE_REGISTER "al"));
-               MOVZBQ ((BYTE_REGISTER "al"), var')]
+               MOVZB ((BYTE_REGISTER "al"), var')]
             | Compare cmp -> (match cmp with
                 | Equal ->
                   let lhs' = arg_of_flat_argument lhs in
                   let rhs' = arg_of_flat_argument rhs in
                   let var' = VARIABLE var in
-                  [CMPQ (lhs', rhs');
+                  [CMP (lhs', rhs');
                    SET (E, (BYTE_REGISTER "al"));
-                   MOVZBQ ((BYTE_REGISTER "al"), var')]
+                   MOVZB ((BYTE_REGISTER "al"), var')]
                 | GreaterThan ->
                   let lhs' = arg_of_flat_argument lhs in
                   let rhs' = arg_of_flat_argument rhs in
                   let var' = VARIABLE var in
-                  [CMPQ (rhs', lhs');
+                  [CMP (rhs', lhs');
                    SET (G, (BYTE_REGISTER "al"));
-                   MOVZBQ ((BYTE_REGISTER "al"), var')]
+                   MOVZB ((BYTE_REGISTER "al"), var')]
                 | LessThan ->
                   let lhs' = arg_of_flat_argument lhs in
                   let rhs' = arg_of_flat_argument rhs in
                   let var' = VARIABLE var in
-                  [CMPQ (rhs', lhs');
+                  [CMP (rhs', lhs');
                    SET (L, (BYTE_REGISTER "al"));
-                   MOVZBQ ((BYTE_REGISTER "al"), var')])))
+                   MOVZB ((BYTE_REGISTER "al"), var')])))
     | IfStatement (test, consequent_instrs, alternate_instrs) -> (match test with
         | BinaryExpression ((Compare cmp), lhs, rhs) ->
           let lhs' = arg_of_flat_argument lhs in
           let rhs' = arg_of_flat_argument rhs in
           let then_instructions = select consequent_instrs  in
           let else_instructions = select alternate_instrs in
-          [IF_STATEMENT (CMPQ (rhs', lhs'), then_instructions, else_instructions)]
+          [IF_STATEMENT (CMP (rhs', lhs'), then_instructions, else_instructions)]
         | _ -> raise Unhandled_if_test_expression))
 
 and select (stmts : Flat.statement list) : Select.instruction list =

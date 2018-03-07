@@ -187,10 +187,10 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : I
       | Select.ADD (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
       | Select.SUB (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
       | Select.NEG d -> attempt_to_add_edge liveness [d] d graph vt
-      | Select.XORQ (s, d) -> ()
-      | Select.CMPQ (s, d) -> ()
+      | Select.XOR (s, d) -> ()
+      | Select.CMP (s, d) -> ()
       | Select.SET (_cc, d) -> ()
-      | Select.MOVZBQ (s, d) -> ()
+      | Select.MOVZB (s, d) -> ()
       | _ -> ()) mapping;
   graph_interference_ts := ((Unix.gettimeofday ()) -. start);
   graph

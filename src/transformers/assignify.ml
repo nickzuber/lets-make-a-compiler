@@ -114,11 +114,11 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
   | Select.POP src ->
     let src' = arg_of_select_arg mapping src in
     [POPQ src']
-  | Select.XORQ (src, dest) ->
+  | Select.XOR (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     XORQ (src', dest') |> fix_illegal_instruction_combinations
-  | Select.CMPQ (src, dest) ->
+  | Select.CMP (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     CMPQ (src', dest') |> fix_illegal_instruction_combinations
@@ -129,7 +129,7 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
   | Select.JUMP (cc, label) ->
     let cc' = cc_of_select_cc cc in
     JUMP (cc', label) |> fix_illegal_instruction_combinations
-  | Select.MOVZBQ (src, dest) ->
+  | Select.MOVZB (src, dest) ->
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     MOVZBQ (src', dest') |> fix_illegal_instruction_combinations

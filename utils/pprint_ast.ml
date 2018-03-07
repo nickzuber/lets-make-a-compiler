@@ -192,17 +192,17 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
-    | XORQ (a, b) ->
+    | XOR (a, b) ->
       Printf.sprintf "%sXOR \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
-    | CMPQ (a, b) ->
+    | CMP (a, b) ->
       Printf.sprintf "%sCMP \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
-    | MOVZBQ (a, b) ->
+    | MOVZB (a, b) ->
       Printf.sprintf "%sMOVZB \t%s, %s"
         (build_offset padding)
         (string_of_arg a)

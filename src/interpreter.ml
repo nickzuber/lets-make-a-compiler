@@ -5,7 +5,7 @@ exception Bad_program
 exception Incorrect_step of string
 
 type result =
-  |R_INT of int
+  | R_INT of int
   | R_BOOL of bool
 
 let rec interp (expr : expression) (env : (string, result) Hashtbl.t) : result =

@@ -32,8 +32,11 @@ let rec interp (expr : expression) (env : (string, result) Hashtbl.t) : result =
      | (Or, (R_BOOL a), (R_BOOL b)) -> R_BOOL (a || b)
      | (Compare cmp, (R_BOOL a), (R_BOOL b)) -> (match cmp with
          | Equal -> R_BOOL (a = b)
+         | _ -> raise Bad_program)
+     | (Compare cmp, (R_INT a), (R_INT b)) -> (match cmp with
          | GreaterThan -> R_BOOL (a > b)
-         | LessThan -> R_BOOL (a < b))
+         | LessThan -> R_BOOL (a < b)
+         | _ -> raise Bad_program)
      | _ -> raise Bad_program
     )
   | UnaryExpression (op, operand) ->

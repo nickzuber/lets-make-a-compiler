@@ -47,6 +47,17 @@ let test_nested_if_true () =
             Int 4))))
   |> Runner.test_output
 
+let test_nested_if_true2 () =
+  Program
+    (IfExpression
+       ((BinaryExpression
+           ((Compare LessThan),
+            (Int 9),
+            (Int 10))),
+        (Int 1),
+        (Int 0)))
+  |> Runner.test_output
+
 let test_nested_if_false () =
   Program
     (IfExpression
@@ -81,7 +92,8 @@ let main () = Runner.(
     run test_if_false "if false" "";
     run test_if_not_true "if not true" "";
     run test_if_not_false "if not false" "";
-    run test_nested_if_true "nested if true" "";
+    run test_nested_if_true "nested if true (int)" "";
+    run test_nested_if_true2 "nested if true (bool)" "";
     run test_nested_if_false "nested if false" "";
     run test_really_nested_if "very nested if" "";
   )

@@ -45,8 +45,8 @@ let if_expr =
          ((Compare LessThan),
           (Int 9),
           (Int 10))),
-      (pow2 2),
-      (pow2 4)))
+      (Int 1),
+      (Int 0)))
 
 let prog2 = Program
     (IfExpression
@@ -68,7 +68,7 @@ let prog_tons_of_variables = Program
 
 let _ =
   try
-    let prog' = prog2 in
+    let prog' = Program if_expr in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

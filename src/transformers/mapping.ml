@@ -90,7 +90,6 @@ let rec compute_liveness (instr : Select.instruction) (mapping : (Select.instruc
   | Select.IF_STATEMENT (t, c_instrs, a_instrs) ->
     let (c_mapping, c_previous_liveness) = build_liveness_mapping c_instrs previous_liveness in
     let (a_mapping, a_previous_liveness) = build_liveness_mapping a_instrs previous_liveness in
-    (* NOTE: will probably need to add vars from `t` instruction *)
     let liveness = Set.union c_previous_liveness a_previous_liveness in
     let mapping' = Immutable_hashtbl.combine c_mapping a_mapping in
     let mapping'' = Immutable_hashtbl.add mapping' instr liveness in
@@ -108,7 +107,7 @@ and build_liveness_mapping instructions previous_liveness =
   let reversed_instructions = List.rev instructions in
   let size = List.length instructions in
   let mapping = Immutable_hashtbl.create size in
-  (* Iterate through instructions, return the last previous_liveness at the end. *)
+  (* Iterate through instructions, return the final previous_liveness at the end. *)
   let rec assign instrs mapping previous_liveness =
     match instrs with
     | [] -> (mapping, previous_liveness)
@@ -256,8 +255,6 @@ let create ?(quiet=false) (vars : string list) (instructions : Select.instructio
   let (liveness_mapping, _final_liveness) = build_liveness_mapping instructions empty_liveness in
   let liveness_graph = build_liveness_graph vars liveness_mapping in
   let coloring = saturate liveness_graph in
-  (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
-     https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
   (* Map the rest of the variables to memory *)
   let mapping, spill_size = build_variable_to_register_mapping vars coloring in
   (* [DEBUG] Used just for debugging. *)

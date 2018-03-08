@@ -39,7 +39,7 @@ end = struct
     tbl
 end
 
-(* Simple Hashtbl wrapper to simulate an immutable hashset. *)
+(* Simple Hashtbl wrapper to simulate a hashset. *)
 module Set : sig
   type 'a t = ('a, unit) Hashtbl.t
   val create : int -> ('a, unit) Hashtbl.t

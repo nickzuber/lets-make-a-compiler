@@ -43,7 +43,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
               let lhs' = arg_of_flat_argument lhs in
               let rhs' = arg_of_flat_argument rhs in
               let var' = VARIABLE var in
-              [CMP (lhs', rhs');
+              [CMP (rhs', lhs');
                SET (E, (BYTE_REGISTER "al"));
                MOVZB ((BYTE_REGISTER "al"), var')]
             | Or ->
@@ -51,7 +51,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
               let lhs' = arg_of_flat_argument lhs in
               let rhs' = arg_of_flat_argument rhs in
               let var' = VARIABLE var in
-              [CMP (lhs', rhs');
+              [CMP (rhs', lhs');
                SET (E, (BYTE_REGISTER "al"));
                MOVZB ((BYTE_REGISTER "al"), var')]
             | Compare cmp -> (match cmp with
@@ -59,7 +59,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
                   let lhs' = arg_of_flat_argument lhs in
                   let rhs' = arg_of_flat_argument rhs in
                   let var' = VARIABLE var in
-                  [CMP (lhs', rhs');
+                  [CMP (rhs', lhs');
                    SET (E, (BYTE_REGISTER "al"));
                    MOVZB ((BYTE_REGISTER "al"), var')]
                 | GreaterThan ->

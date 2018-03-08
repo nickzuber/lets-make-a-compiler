@@ -63,12 +63,18 @@ let prog2 = Program
             Int 4,
             Int 5))))
 
+let simple_prog = Program
+    (BinaryExpression
+       (Plus,
+        False,
+        Int 1))
+
 let prog_tons_of_variables = Program
     (pow2 3)
 
 let _ =
   try
-    let prog' = Program if_expr in
+    let prog' = prog_tons_of_variables in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

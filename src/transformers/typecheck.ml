@@ -4,7 +4,7 @@ open Ast.Standard
 exception Type_error of string
 exception Incorrect_step of string
 
-(* *)
+(* Derive the type from a Standard expression. *)
 let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t =
   match expr with
   | Variable name -> Hashtbl.find env name

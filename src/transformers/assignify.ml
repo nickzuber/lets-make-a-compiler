@@ -6,8 +6,8 @@ exception Unexpected_argument
 
 (* Global ID generator module. *)
 module Dangerous_guid = struct
-  let _id = ref (-1)
-  let get () = _id := (!_id + 1); !_id
+  let id = ref (-1)
+  let get () = id := (!id + 1); !id
 end
 
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
@@ -160,7 +160,8 @@ and assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.i
 let transform ?(quiet=false) (prog : program) : program =
   let (t, instructions) = match prog with
     | SelectProgram (t, vars, instructions, final_instruction) ->
-      (* The spilled variable size is used for offsetting the stack pointer. *)
+      (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
+         https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
       let mapping, spilled_variable_size = Mapping.create vars instructions ~quiet:quiet in
       let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
       (* Push stack pointer down far enough to store a variable in each memory location. *)
@@ -177,7 +178,7 @@ let transform ?(quiet=false) (prog : program) : program =
              MOVQ (REGISTER "rax", REGISTER "rdi");
              print_function_callq;
              MOVQ (INT 0, REGISTER "rax");
-             LEAVEQ;  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * spilled_variable_size), REGISTER "rsp")` *)
+             LEAVEQ;  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * size), REGISTER "rsp")` *)
              RETQ (REGISTER "rax")]
           | _ -> raise (Unexpected_argument)) in
       (t, prepare_memory @ instructions @ prepare_return)

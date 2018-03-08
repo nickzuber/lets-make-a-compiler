@@ -33,4 +33,4 @@ clean:
 	rm -f ./testing_program
 	rm -f ./assembly.s
 
-.PHONY: all run build build-test test try clean
+.PHONY: all run build build-test build-with-runtime test try clean

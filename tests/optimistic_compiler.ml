@@ -1,7 +1,7 @@
 open Ast
 
 let run (assembly : program) : string =
-  let runtime_filename = "control" in
+  let runtime_filename = "gc" in
   let assembly_filename = "assembly" in
   let assembly_string = Assembler.string_of_assembly assembly in
   (* Create assembly file *)

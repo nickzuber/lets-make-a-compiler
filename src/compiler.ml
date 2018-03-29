@@ -41,7 +41,7 @@ let build_program runtime_filename =
 
 let run (assembly : program) : unit =
   print_endline (create_title "Building and running program");
-  let runtime_filename = "control" in
+  let runtime_filename = "gc" in
   let assembly_filename = "assembly" in
   let assembly_string = Assembler.string_of_assembly assembly in
   (* Create assembly file *)

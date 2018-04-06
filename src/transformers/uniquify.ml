@@ -50,6 +50,8 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
   | Read -> Read
   | True -> True
   | False -> False
+  | Void -> Void
+  | _ -> expr (* TODO: Vector, VectorRef, VectorSet *)
 
 (* Given a program, removes any instances of shadowing by providing each variable
  * with a unique name. A feature of this transformation is any variables out referenced

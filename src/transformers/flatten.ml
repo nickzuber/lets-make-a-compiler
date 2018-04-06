@@ -79,6 +79,8 @@ let rec flatten (expr : Standard.expression) (count : int) : int * string list *
   | Standard.Int n -> (count, [], [], Int n)
   | Standard.True -> (count, [], [], Int 1)
   | Standard.False -> (count, [], [], Int 0)
+  | Void -> (count, [], [], Void)
+  | _ -> expr (* TODO: Vector, VectorRef, VectorSet *)
 
 (* Given a typed program, transform it into a flat program such that all forms of nesting is removed. *)
 let transform (prog : program) : program =

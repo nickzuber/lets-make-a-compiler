@@ -3,6 +3,7 @@ open Ast.Standard
 
 exception Type_error of string
 exception Incorrect_step of string
+exception Attempted_to_typecheck_macro
 
 (* Derive the type from a Standard expression. *)
 let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t =
@@ -84,6 +85,11 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
   | Read -> T_INT
   | True -> T_BOOL
   | False -> T_BOOL
+  | Void -> T_VOID
+  | Vector exprs -> T_VOID
+  | VectorRef (vec, index) -> T_VOID
+  | VectorSet (vec, index, value) -> T_VOID
+  | _ -> (raise Attempted_to_typecheck_macro)
 
 (* *)
 let transform (prog : program) : program =

@@ -44,7 +44,7 @@ let run test name desc =
   with
   | Unimplemented_testcase ->
     unimplemented := !unimplemented + 1;
-    print_endline ("\x1b[33m↻ \x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")
+    print_endline ("\x1b[90m↻ \x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ "\x1b[39m")
   | OUnitTest.OUnit_failure msg ->
     fail := !fail + 1;
     print_endline ("\x1b[31m⊘ \x1b[39m " ^ name ^ " \x1b[90m" ^ desc ^ " " ^  msg ^ "\x1b[39m")

@@ -12,6 +12,9 @@ module rec Standard : sig
     | Or
     | Compare of cmps
   type expression =
+    | Vector of expression list
+    | VectorRef of expression * int
+    | VectorSet of expression * int * expression
     | Read
     | True
     | False
@@ -21,6 +24,10 @@ module rec Standard : sig
     | BinaryExpression of binops * expression * expression
     | LetExpression of string * expression * expression
     | IfExpression of expression * expression * expression
+    | Void
+    (* macros *)
+    | Begin of expression list
+    | When of expression * expression list
 end = Standard
 
 (* Note: not really flat anymore with if statements. *)
@@ -115,6 +122,8 @@ end = Assembly
 type t =
   | T_BOOL
   | T_INT
+  | T_VOID
+  | T_VECTOR of t list
 
 type program =
   | Program of Standard.expression

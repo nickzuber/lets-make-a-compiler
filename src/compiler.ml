@@ -3,7 +3,8 @@ open Pprint_ast
 
 (* The core compiling routine *)
 let compile (prog : program) : program =
-  prog |> Uniquify.transform
+  prog |> Macros.transform
+  |> Uniquify.transform
   |> Typecheck.transform
   |> Flatten.transform
   |> Selectify.transform
@@ -12,7 +13,8 @@ let compile (prog : program) : program =
 (* Compiles the program decorated with print messages *)
 let compile_and_debug (prog : program) : program =
   Printf.printf "%s" (create_title "Compiling each step in debug mode");
-  prog |> Uniquify.transform
+  prog |> Macros.transform
+  |> Uniquify.transform
   |> display_title "Uniquify"
   |> Typecheck.transform
   |> display_title "Typecheck"

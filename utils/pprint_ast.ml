@@ -45,6 +45,12 @@ let rec string_of_program ?(padding=0) node : string =
 
 and string_of_expression ?(padding=0) node : string = Ast.Standard.(
     match node with
+    | Begin _ -> Printf.sprintf "%sBegin _" (build_offset padding)
+    | When _ -> Printf.sprintf "%sWhen _" (build_offset padding)
+    | Vector _ -> Printf.sprintf "%sVector TODO" (build_offset padding)
+    | VectorRef _ -> Printf.sprintf "%sVectorRef TODO" (build_offset padding)
+    | VectorSet _ -> Printf.sprintf "%sVectorSet TODO" (build_offset padding)
+    | Void -> Printf.sprintf "%sVoid" (build_offset padding)
     | Read -> Printf.sprintf "%sRead" (build_offset padding)
     | Int n -> Printf.sprintf "%sInt: %d" (build_offset padding) n
     | True -> Printf.sprintf "%sTrue" (build_offset padding)
@@ -378,6 +384,10 @@ and string_of_cmp ?(padding=0) node : string = Ast.Flat.(
 
 and string_of_type ?(padding=0) node : string = Ast.(
     match node with
+    | T_VOID -> Printf.sprintf "%svoid" (build_offset padding)
+    | T_VECTOR ts ->
+      Printf.sprintf "%s%s" (build_offset padding)
+        (List.fold_left (fun acc t -> Printf.sprintf "%s * %s" (string_of_type t) acc) "" ts)
     | T_INT -> Printf.sprintf "%sint" (build_offset padding)
     | T_BOOL -> Printf.sprintf "%sbool" (build_offset padding))
 

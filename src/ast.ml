@@ -1,3 +1,9 @@
+type t =
+  | T_BOOL
+  | T_INT
+  | T_VOID
+  | T_VECTOR of t list
+
 module rec Standard : sig
   type cmps =
     | Equal
@@ -12,9 +18,6 @@ module rec Standard : sig
     | Or
     | Compare of cmps
   type expression =
-    | Vector of expression list
-    | VectorRef of expression * int
-    | VectorSet of expression * int * expression
     | Read
     | True
     | False
@@ -25,10 +28,44 @@ module rec Standard : sig
     | LetExpression of string * expression * expression
     | IfExpression of expression * expression * expression
     | Void
+    | Vector of expression list
+    | VectorRef of expression * int
+    | VectorSet of expression * int * expression
     (* macros *)
     | Begin of expression list
     | When of expression * expression list
 end = Standard
+
+module rec TypedStandard : sig
+  type cmps =
+    | Equal
+    | GreaterThan
+    | LessThan
+  type unops =
+    | Minus
+    | Not
+  type binops =
+    | Plus
+    | And
+    | Or
+    | Compare of cmps
+  type typed_expression = t * expression
+  (* Exact copy of Standard expression but with types and no macros. *)
+  and expression =
+    | Read
+    | True
+    | False
+    | Int of int
+    | Variable of string
+    | UnaryExpression of unops * typed_expression
+    | BinaryExpression of binops * typed_expression * typed_expression
+    | LetExpression of string * typed_expression * typed_expression
+    | IfExpression of typed_expression * typed_expression * typed_expression
+    | Void
+    | Vector of typed_expression list
+    | VectorRef of typed_expression * int
+    | VectorSet of typed_expression * int * typed_expression
+end = TypedStandard
 
 (* Note: not really flat anymore with if statements. *)
 module rec Flat : sig
@@ -119,15 +156,9 @@ module rec Assembly : sig
     | LEAVEQ
 end = Assembly
 
-type t =
-  | T_BOOL
-  | T_INT
-  | T_VOID
-  | T_VECTOR of t list
-
 type program =
   | Program of Standard.expression
-  | ProgramTyped of t * Standard.expression
+  | ProgramTyped of TypedStandard.typed_expression
   | FlatProgram of string list * Flat.statement list * Flat.argument * t
   | SelectProgram of t * string list * Select.instruction list * Select.instruction
   | AssemblyProgram of t * Assembly.instruction list

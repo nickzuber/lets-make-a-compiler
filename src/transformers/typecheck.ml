@@ -86,8 +86,12 @@ let rec typecheck (expr : expression) (env : (string, Ast.t) Hashtbl.t) : Ast.t 
   | True -> T_BOOL
   | False -> T_BOOL
   | Void -> T_VOID
-  | Vector exprs -> T_VOID
-  | VectorRef (vec, index) -> T_VOID
+  | Vector exprs -> T_VECTOR [T_INT; T_INT; T_BOOL]
+  | VectorRef (vec, index) ->
+    let vec' = match vec with
+      | Vector exprs -> exprs
+      | _ -> (raise Type_error "Type_error") in
+    typecheck (List.nth vec' index) env
   | VectorSet (vec, index, value) -> T_VOID
   | _ -> (raise Attempted_to_typecheck_macro)
 

@@ -387,7 +387,9 @@ and string_of_type ?(padding=0) node : string = Ast.(
     | T_VOID -> Printf.sprintf "%svoid" (build_offset padding)
     | T_VECTOR ts ->
       Printf.sprintf "%s%s" (build_offset padding)
-        (List.fold_left (fun acc t -> Printf.sprintf "%s * %s" (string_of_type t) acc) "" ts)
+        (List.fold_left (fun acc t -> match acc with
+             | "" -> Printf.sprintf "%s" (string_of_type t)
+             | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) "" ts)
     | T_INT -> Printf.sprintf "%sint" (build_offset padding)
     | T_BOOL -> Printf.sprintf "%sbool" (build_offset padding))
 

@@ -64,22 +64,22 @@ let prog2 = Program
             Int 5))))
 
 let simple_prog = Program
-    (Vector ([Int 1; Int 2; True]))
+    (Vector
+       [ Int 1
+       ; Int 2
+       ; False
+       ; Int 3
+       ])
 
 let prog_tons_of_variables = Program
-    (pow2 4)
+    (pow2 3)
 
 let () =
   try
     let prog' = simple_prog in
     if Settings.debug_mode then
       (display "Current program representation";
-       let (t, p) = match (prog' |> Macros.transform |> Typecheck.transform) with
-         | ProgramTyped (t, p) -> t,p
-         | _ -> (raise Not_found) in
-       Printf.printf "\n\n%s\n\n" (string_of_type t))
-      (* |> Compiler.compile_and_debug
-         |> Compiler.run) *)
+       prog' |> Compiler.compile_and_debug |> Compiler.run)
     else
       Compiler.compile_and_run prog'
   with

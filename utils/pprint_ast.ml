@@ -13,11 +13,10 @@ let rec string_of_program ?(padding=0) node : string =
   | Program expr ->
     let str = string_of_expression expr ~padding:(padding + padding_offset) in
     Printf.sprintf "%sProgram\n%s" (build_offset padding) str
-  | ProgramTyped (expr_t, expr) ->
-    let str = string_of_expression expr ~padding:(padding + padding_offset) in
-    Printf.sprintf "%sProgramTyped : \x1b[90m%s\x1b[39m\n%s"
+  | ProgramTyped expr ->
+    let str = string_of_typed_expression expr ~padding:(padding + padding_offset) in
+    Printf.sprintf "%sProgramTyped\n%s"
       (build_offset padding)
-      (string_of_type expr_t)
       str
   | FlatProgram (vars, stmts, arg, arg_t) ->
     let vars_string = string_of_variables vars ~padding:(padding + padding_offset) in
@@ -80,6 +79,50 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
         (string_of_expression c ~padding:(padding + padding_offset))
         (string_of_expression a ~padding:(padding + padding_offset)))
 
+and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
+    let (t, expr) = node in
+    match expr with
+    | Vector exprs ->
+      Printf.sprintf "%sVector \x1b[90m: %s\x1b[39m%s"
+        (build_offset padding)
+        (string_of_type t)
+        (List.fold_left
+           (fun acc e -> Printf.sprintf "\n%s"
+               (string_of_typed_expression e ~padding:(padding + padding_offset)) ^ acc)
+           ""
+           exprs)
+    | VectorRef _ -> Printf.sprintf "%sVectorRef TODO" (build_offset padding)
+    | VectorSet _ -> Printf.sprintf "%sVectorSet TODO" (build_offset padding)
+    | Void -> Printf.sprintf "%sVoid \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
+    | Read -> Printf.sprintf "%sRead \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
+    | Int n -> Printf.sprintf "%sInt: %d \x1b[90m: %s\x1b[39m" (build_offset padding) n (string_of_type t)
+    | True -> Printf.sprintf "%sTrue \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
+    | False -> Printf.sprintf "%sFalse \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
+    | Variable name -> Printf.sprintf "%sVariable: %s \x1b[90m: %s\x1b[39m" (build_offset padding) name (string_of_type t)
+    | BinaryExpression (op, lhs, rhs) ->
+      Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
+        (build_offset padding)
+        (string_of_typed_binop op ~padding:(padding + padding_offset))
+        (string_of_typed_expression lhs ~padding:(padding + padding_offset))
+        (string_of_typed_expression rhs ~padding:(padding + padding_offset))
+    | UnaryExpression (op, operand) ->
+      Printf.sprintf "%sUnaryExpression\n%s\n%s"
+        (build_offset padding)
+        (string_of_typed_unop op ~padding:(padding + padding_offset))
+        (string_of_typed_expression operand ~padding:(padding + padding_offset))
+    | LetExpression (v, binding, expr) ->
+      Printf.sprintf "%sLetExpression\n%s\n%s\n%s"
+        (build_offset padding)
+        (build_offset (padding + padding_offset) ^ v)
+        (string_of_typed_expression binding ~padding:(padding + padding_offset))
+        (string_of_typed_expression expr ~padding:(padding + padding_offset))
+    | IfExpression (t, c, a) ->
+      Printf.sprintf "%sIfExpression\n%s\n%s\n%s"
+        (build_offset padding)
+        (string_of_typed_expression t ~padding:(padding + padding_offset))
+        (string_of_typed_expression c ~padding:(padding + padding_offset))
+        (string_of_typed_expression a ~padding:(padding + padding_offset)))
+
 and string_of_binop ?(padding=0) node : string = Ast.Standard.(
     match node with
     | Plus -> Printf.sprintf "%sPlus" (build_offset padding)
@@ -87,13 +130,31 @@ and string_of_binop ?(padding=0) node : string = Ast.Standard.(
     | Or -> Printf.sprintf "%sOr" (build_offset padding)
     | Compare cmp -> Printf.sprintf "%s%s" (build_offset padding) (string_of_cmps cmp))
 
+and string_of_typed_binop ?(padding=0) node : string = Ast.TypedStandard.(
+    match node with
+    | Plus -> Printf.sprintf "%sPlus" (build_offset padding)
+    | And -> Printf.sprintf "%sAnd" (build_offset padding)
+    | Or -> Printf.sprintf "%sOr" (build_offset padding)
+    | Compare cmp -> Printf.sprintf "%s%s" (build_offset padding) (string_of_typed_cmps cmp))
+
 and string_of_cmps ?(padding=0) node : string = Ast.Standard.(
     match node with
     | Equal -> Printf.sprintf "%sEqual" (build_offset padding)
     | GreaterThan -> Printf.sprintf "%sGreaterThan" (build_offset padding)
     | LessThan -> Printf.sprintf "%sLessThan" (build_offset padding))
 
+and string_of_typed_cmps ?(padding=0) node : string = Ast.TypedStandard.(
+    match node with
+    | Equal -> Printf.sprintf "%sEqual" (build_offset padding)
+    | GreaterThan -> Printf.sprintf "%sGreaterThan" (build_offset padding)
+    | LessThan -> Printf.sprintf "%sLessThan" (build_offset padding))
+
 and string_of_unop ?(padding=0) node : string = Ast.Standard.(
+    match node with
+    | Minus -> Printf.sprintf "%sMinus" (build_offset padding)
+    | Not -> Printf.sprintf "%sNot" (build_offset padding))
+
+and string_of_typed_unop ?(padding=0) node : string = Ast.TypedStandard.(
     match node with
     | Minus -> Printf.sprintf "%sMinus" (build_offset padding)
     | Not -> Printf.sprintf "%sNot" (build_offset padding))
@@ -387,9 +448,9 @@ and string_of_type ?(padding=0) node : string = Ast.(
     | T_VOID -> Printf.sprintf "%svoid" (build_offset padding)
     | T_VECTOR ts ->
       Printf.sprintf "%s%s" (build_offset padding)
-        (List.fold_left (fun acc t -> match acc with
+        (List.fold_right (fun t acc -> match acc with
              | "" -> Printf.sprintf "%s" (string_of_type t)
-             | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) "" ts)
+             | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) ts "")
     | T_INT -> Printf.sprintf "%sint" (build_offset padding)
     | T_BOOL -> Printf.sprintf "%sbool" (build_offset padding))
 

@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/mman.h>
 
 void print_int(int x) {
   printf("%d\n", x);

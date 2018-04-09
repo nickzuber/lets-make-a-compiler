@@ -159,6 +159,6 @@ end = Assembly
 type program =
   | Program of Standard.expression
   | ProgramTyped of TypedStandard.typed_expression
-  | FlatProgram of string list * Flat.statement list * Flat.argument * t
-  | SelectProgram of t * string list * Select.instruction list * Select.instruction
+  | FlatProgram of (string, t) Hashtbl.t * Flat.statement list * Flat.argument * t
+  | SelectProgram of t * (string, t) Hashtbl.t * Select.instruction list * Select.instruction
   | AssemblyProgram of t * Assembly.instruction list

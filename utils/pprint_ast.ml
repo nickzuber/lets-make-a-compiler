@@ -46,7 +46,14 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
     match node with
     | Begin _ -> Printf.sprintf "%sBegin _" (build_offset padding)
     | When _ -> Printf.sprintf "%sWhen _" (build_offset padding)
-    | Vector _ -> Printf.sprintf "%sVector TODO" (build_offset padding)
+    | Vector exprs ->
+      Printf.sprintf "%sVector%s"
+        (build_offset padding)
+        (List.fold_left
+           (fun acc e -> Printf.sprintf "\n%s"
+               (string_of_expression e ~padding:(padding + padding_offset)) ^ acc)
+           ""
+           exprs)
     | VectorRef _ -> Printf.sprintf "%sVectorRef TODO" (build_offset padding)
     | VectorSet _ -> Printf.sprintf "%sVectorSet TODO" (build_offset padding)
     | Void -> Printf.sprintf "%sVoid" (build_offset padding)
@@ -187,9 +194,9 @@ and string_of_assembly_instructions ?(padding=0) instructions : string = Ast.Ass
 
 and string_of_variables ?(padding=0) vars : string = Ast.Flat.(
     let start = Printf.sprintf "%s\x1b[4mVariables:\x1b[0m" (build_offset padding) in
-    let variables = List.fold_left (fun acc var ->
-        let str = build_offset(padding + padding_offset) ^ var in
-        acc ^ "\n" ^ str) "" vars in
+    let variables = Hashtbl.fold (fun k v acc ->
+        acc ^ (Printf.sprintf "\n%s%s \x1b[90m: %s\x1b[39m"
+                 (build_offset (padding + padding_offset)) k (string_of_type v))) vars "" in
     start ^ variables)
 
 and string_of_statement ?(padding=0) node : string = Ast.Flat.(

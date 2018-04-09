@@ -3,6 +3,7 @@ open Ast.Standard
 
 exception Illegal_variable_reference of string
 exception Incorrect_step of string
+exception Encountered_undesugared_macro
 
 (* Return the amount of times we've seen a variable so far. Since the variables
  * are stored in the hashtable, a failed lookup means we've seen it zero times so
@@ -51,7 +52,17 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
   | True -> True
   | False -> False
   | Void -> Void
-  | _ -> expr (* TODO: Vector, VectorRef, VectorSet *)
+  | Vector exprs ->
+    let exprs' = List.fold_left (fun acc e -> (uniquify e env) :: acc) [] exprs in
+    Vector exprs'
+  | VectorRef (vec, index) ->
+    let vec' = uniquify vec env in
+    VectorRef (vec', index)
+  | VectorSet (vec, index, value) ->
+    let vec' = uniquify vec env in
+    let value' = uniquify value env in
+    VectorSet (vec', index, value')
+  | _ -> raise Encountered_undesugared_macro
 
 (* Given a program, removes any instances of shadowing by providing each variable
  * with a unique name. A feature of this transformation is any variables out referenced

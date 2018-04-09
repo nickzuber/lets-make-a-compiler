@@ -22,8 +22,8 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
   | Standard.LetExpression (name, binding, body) ->
     let (tb, typed_binding) = get_typed_expression binding env in
     Hashtbl.add env name tb;
-    let typed_body = get_typed_expression body env in
-    (tb, LetExpression (name, (tb, typed_binding), typed_body))
+    let (td, typed_body) = get_typed_expression body env in
+    (td, LetExpression (name, (tb, typed_binding), (td, typed_body)))
   | Standard.IfExpression (test, consequent, alternate) ->
     let (test_type, typed_test) = get_typed_expression test env in
     let (consequent_type, typed_consequent) = get_typed_expression consequent env in

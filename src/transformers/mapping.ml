@@ -249,7 +249,9 @@ let saturate (graph : Interference_graph.G.t) : (Select.arg, int) Hashtbl.t =
 
 (* Create a mapping between variable names (strings) to registers (memory offsets are included).
  * This is used by assign to turn our Select program into an Assembly program. *)
-let create ?(quiet=false) (vars : string list) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
+let create ?(quiet=false) (vars : (string, Ast.t) Hashtbl.t) (instructions : Select.instruction list) : (string, Assembly.arg) Hashtbl.t * int =
+  (* @TEMP after we changed vars from list to map *)
+  let vars = Hashtbl.fold (fun k v acc -> k :: acc) vars [] in
   (* We want to iterate backwards to compute liveness. *)
   let empty_liveness = Set.create 0 in
   let (liveness_mapping, _final_liveness) = build_liveness_mapping instructions empty_liveness in

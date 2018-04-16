@@ -18,6 +18,8 @@ let compile_and_debug (prog : program) : program =
   |> display_title "Uniquify"
   |> Typecheck.transform
   |> display_title "Typecheck"
+  |> Expose.transform
+  |> display_title "Expose"
   |> Flatten.transform
   |> display_title "Flatten"
   |> Selectify.transform

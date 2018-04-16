@@ -65,7 +65,46 @@ module rec TypedStandard : sig
     | Vector of typed_expression list
     | VectorRef of typed_expression * int
     | VectorSet of typed_expression * int * typed_expression
+    (* macros *)
+    | Begin of typed_expression list
+    | When of typed_expression * typed_expression list
+    | Unless of typed_expression * typed_expression list
 end = TypedStandard
+
+module rec InternalTypedStandard : sig
+  type cmps =
+    | Equal
+    | GreaterThan
+    | LessThan
+  type unops =
+    | Minus
+    | Not
+  type binops =
+    | Plus
+    | And
+    | Or
+    | Compare of cmps
+  type typed_expression = t * expression
+  (* Exact copy of Standard expression but with types and no macros. *)
+  and expression =
+    | Read
+    | True
+    | False
+    | Int of int
+    | Variable of string
+    | UnaryExpression of unops * typed_expression
+    | BinaryExpression of binops * typed_expression * typed_expression
+    | LetExpression of string * typed_expression * typed_expression
+    | IfExpression of typed_expression * typed_expression * typed_expression
+    | Void
+    | Vector of typed_expression list
+    | VectorRef of typed_expression * int
+    | VectorSet of typed_expression * int * typed_expression
+    (* internal *)
+    | Global of string
+    | Collect
+    | Allocate
+end = InternalTypedStandard
 
 (* Note: not really flat anymore with if statements. *)
 module rec Flat : sig
@@ -159,6 +198,7 @@ end = Assembly
 type program =
   | Program of Standard.expression
   | ProgramTyped of TypedStandard.typed_expression
+  | InternalProgramTyped of InternalTypedStandard.typed_expression
   | FlatProgram of (string, t) Hashtbl.t * Flat.statement list * Flat.argument * t
   | SelectProgram of t * (string, t) Hashtbl.t * Select.instruction list * Select.instruction
   | AssemblyProgram of t * Assembly.instruction list

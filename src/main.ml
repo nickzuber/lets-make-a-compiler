@@ -88,7 +88,7 @@ let () =
     let prog' = prog2 in
     if Settings.debug_mode then
       (display "Current program representation";
-       prog' |> Compiler.compile_and_debug |> Compiler.run)
+       prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)
     else
       Compiler.compile_and_run prog'
   with

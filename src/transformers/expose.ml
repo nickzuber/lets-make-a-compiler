@@ -5,7 +5,7 @@ exception Illegal_variable_reference of string
 exception Incorrect_step of string
 
 (* *)
-let rec expose (t : Ast.t) (expr : TypedStandard.expression) (count : int) : Ast.InternalTypedStandard.typed_expression =
+let rec expose (t : Ast.t) (expr : expression) (count : int) : typed_expression =
   match expr with
   | Vector exprs ->
     let count = ref 1 in
@@ -18,8 +18,8 @@ let rec expose (t : Ast.t) (expr : TypedStandard.expression) (count : int) : Ast
     in
     let sugared = (T_VOID, Begin exprs_with_vars) in
     let expr = Macros.desugar_typed sugared in
-    (t, InternalTypedStandard.Collect)
-  | _ -> (t, InternalTypedStandard.Collect)
+    (t, Collect)
+  | _ -> (t, Collect)
 
 (* *)
 let transform (prog : program) : program =
@@ -28,4 +28,4 @@ let transform (prog : program) : program =
     | ProgramTyped (t, expr) -> expose t expr count
     | _ -> raise (Incorrect_step "expected type ProgramTyped")
   in
-  InternalProgramTyped (t, expr)
+  ProgramTyped (t, expr)

@@ -98,6 +98,9 @@ let rec desugar_typed (expr : TypedStandard.typed_expression) : TypedStandard.ty
     let vec' = desugar_typed vec in
     let value' = desugar_typed value in
     (t, VectorSet (vec', index, value'))
+  | (t, Global (str)) -> (t, Global (str))
+  | (t, Collect) -> (t, Collect)
+  | (t, Allocate) -> (t, Allocate)
   | _ -> expr
 
 (* Remove all macros/sugar from the given program. *)

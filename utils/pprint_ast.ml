@@ -100,6 +100,7 @@ and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
            exprs)
     | VectorRef _ -> Printf.sprintf "%sVectorRef TODO" (build_offset padding)
     | VectorSet _ -> Printf.sprintf "%sVectorSet TODO" (build_offset padding)
+    | Allocate (tt, len) -> Printf.sprintf "%sAllocate %s * %d \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type tt) len (string_of_type t)
     | Void -> Printf.sprintf "%sVoid \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | Read -> Printf.sprintf "%sRead \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | Int n -> Printf.sprintf "%sInt: %d \x1b[90m: %s\x1b[39m" (build_offset padding) n (string_of_type t)

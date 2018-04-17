@@ -72,7 +72,7 @@ module rec TypedStandard : sig
     (* internal *)
     | Global of string
     | Collect
-    | Allocate
+    | Allocate of t * int
 end = TypedStandard
 
 (* Note: not really flat anymore with if statements. *)

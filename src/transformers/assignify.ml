@@ -1,14 +1,9 @@
 open Ast
 open Ast.Assembly
+open Polyfill
 
 exception Incorrect_step of string
 exception Unexpected_argument
-
-(* Global ID generator module. *)
-module Dangerous_guid = struct
-  let id = ref (-1)
-  let get () = id := (!id + 1); !id
-end
 
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
 let register_of_variable (mapping : (string, Assembly.arg) Hashtbl.t) (var : string) : Assembly.arg =

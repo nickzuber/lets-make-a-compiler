@@ -137,3 +137,9 @@ let count_unique tbl : int =
   let s = Set.create 53 in
   Hashtbl.iter (fun _k v -> Set.add s v) tbl;
   Set.size s
+
+(* Global ID generator module. *)
+module Dangerous_guid = struct
+  let id = ref (-1)
+  let get () = id := (!id + 1); !id
+end

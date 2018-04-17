@@ -1,11 +1,14 @@
 open Ast
 open Ast.Standard
+open Polyfill
 
 exception Illegal_variable_reference of string
 exception Incorrect_step of string
 
 (* Given an expression, remove any macros/sugar from the expression. *)
 let rec desugar (expr : expression) : expression =
+  let uid = Dangerous_guid.get () in
+  let variable_name = Printf.sprintf "_desugar_%d" uid in
   match expr with
   | When (cond, exprs) ->
     let exprs' = desugar (Begin exprs) in
@@ -16,11 +19,11 @@ let rec desugar (expr : expression) : expression =
   | Begin ([]) -> Void
   | Begin (expr :: []) ->
     (LetExpression
-       ("_", expr, Void))
+       (variable_name, expr, Void))
   | Begin (expr :: rest) ->
     let rest' = desugar (Begin rest) in
     (LetExpression
-       ("_", expr, rest'))
+       (variable_name, expr, rest'))
   | LetExpression (name, binding, body) ->
     let binding' = desugar binding in
     let body' = desugar body in
@@ -52,15 +55,17 @@ let rec desugar (expr : expression) : expression =
 (* Given a typed expression, remove any macros/sugar from the expression. *)
 let rec desugar_typed (expr : TypedStandard.typed_expression) : TypedStandard.typed_expression =
   let open Ast.TypedStandard in
+  let uid = Dangerous_guid.get () in
+  let variable_name = Printf.sprintf "_desugar_typed_%d" uid in
   match expr with
   | (t, Begin ([])) -> (t, Void)
   | (t, Begin (expr :: [])) ->
     (t, LetExpression
-       ("_", expr, (T_VOID, Void)))
+       (variable_name, expr, (T_VOID, Void)))
   | (t, Begin (expr :: rest)) ->
     let rest' = desugar_typed (t, (Begin rest)) in
     (t, (LetExpression
-           ("_", expr, rest')))
+           (variable_name, expr, rest')))
   | (t, When (cond, exprs)) ->
     let exprs' = desugar_typed (t, (Begin exprs)) in
     (t, (IfExpression

@@ -63,13 +63,21 @@ let prog2 = Program
             Int 4,
             Int 5))))
 
-let simple_prog = Program
+let prog'= Program
     (Vector
        [ Int 1
        ; (LetExpression
             ("x",
              (Int 11),
              (Variable "x")))
+       ; False
+       ; Int 3
+       ])
+
+let prog = Program
+    (Vector
+       [ Int 1
+       ; Int 2
        ; False
        ; Int 3
        ])
@@ -85,7 +93,7 @@ let prog_tons_of_variables = Program
 
 let () =
   try
-    let prog' = prog2 in
+    let prog' = prog in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

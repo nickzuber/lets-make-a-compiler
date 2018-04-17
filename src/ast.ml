@@ -97,9 +97,15 @@ module rec Flat : sig
     | Argument of argument
     | UnaryExpression of unops * argument
     | BinaryExpression of binops * argument * argument
+    | Allocate of t
+    | VectorRef of argument * int
+    | VectorSet of argument * int * argument
+    | Void
+    | Global of string
   type statement =
     | Assignment of string * expression
     | IfStatement of expression * statement list * statement list
+    | Collect
 end = Flat
 
 module rec Select : sig

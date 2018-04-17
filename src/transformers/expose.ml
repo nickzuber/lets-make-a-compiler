@@ -5,6 +5,7 @@ open Polyfill
 exception Illegal_variable_reference of string
 exception Incorrect_step of string
 exception Not_a_LetExpression
+exception Encountered_a_macro
 
 (* *)
 let rec expose (expr : typed_expression) : typed_expression =
@@ -70,9 +71,41 @@ let rec expose (expr : typed_expression) : typed_expression =
     (* The type being returned here is same as `t` *)
     let (_, exposed_expr') = Macros.desugar_typed exposed_expr in
     (t, exposed_expr')
-  | (t, _) -> (t, Collect)  (* need to actually go though each one individually *)
+  | (t, LetExpression (name, binding, body)) ->
+    let binding' = expose binding in
+    let body' = expose body in
+    (t, LetExpression (name, binding', body'))
+  | (t, IfExpression (test, consequent, alternate)) ->
+    let test' = expose test in
+    let consequent' = expose consequent in
+    let alternate' = expose alternate in
+    (t, IfExpression (test', consequent', alternate'))
+  | (t, BinaryExpression (op, lhs, rhs)) ->
+    let lhs' = expose lhs in
+    let rhs' = expose rhs in
+    (t, BinaryExpression (op, lhs', rhs'))
+  | (t, UnaryExpression (op, operand)) ->
+    let operand' = expose operand in
+    (t, UnaryExpression (op, operand'))
+  | (t, VectorRef (vec, index)) ->
+    let vec' = expose vec in
+    (t, VectorRef (vec', index))
+  | (t, VectorSet (vec, index, value)) ->
+    let vec' = expose vec in
+    let value' = expose value in
+    (t, VectorSet (vec', index, value'))
+  | (t, Global (str)) -> (t, Global (str))
+  | (t, Collect) -> (t, Collect)
+  | (t, Allocate (tt, len)) -> (t, Allocate (tt, len))
+  | (t, Read) -> (t, Read)
+  | (t, Variable s) -> (t, Variable s)
+  | (t, Int n) -> (t, Int n)
+  | (t, True) -> (t, True)
+  | (t, False) -> (t, False)
+  | (t, Void) -> (t, Void)
+  | _ -> raise Encountered_a_macro
 
-(* *)
+(* Expose allocations and replace calls to vectors with explicit calls to allocate. *)
 let transform (prog : program) : program =
   let (t, expr) = match prog with
     | ProgramTyped typed_expr -> expose typed_expr

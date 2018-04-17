@@ -22,13 +22,14 @@ let rec string_of_program ?(padding=0) node : string =
     let vars_string = string_of_variables vars ~padding:(padding + padding_offset) in
     let stmts_string = string_of_statements stmts ~padding:(padding + padding_offset) in
     let arg_string = string_of_argument arg in
-    Printf.sprintf "%sFlatProgram\n%s\n%s\n%s\x1b[4mArgument:\x1b[0m\n%s%s"
+    Printf.sprintf "%sFlatProgram\n%s\n%s\n%s\x1b[4mArgument:\x1b[0m\n%s%s \x1b[90m: %s\x1b[39m"
       (build_offset padding)
       vars_string
       stmts_string
       (build_offset (padding + padding_offset))
       (build_offset (padding + (padding_offset * 2)))
       arg_string
+      (string_of_type arg_t)
   | SelectProgram (t, _vars, instructions, final_instruction) ->
     let instructions_string = string_of_instructions instructions ~padding:(padding) in
     Printf.sprintf "%sSelectProgram:%s\n%s%s"
@@ -206,6 +207,9 @@ and string_of_variables ?(padding=0) vars : string = Ast.Flat.(
 
 and string_of_statement ?(padding=0) node : string = Ast.Flat.(
     match node with
+    | Collect ->
+      Printf.sprintf "%sCollect"
+        (build_offset padding)
     | Assignment (name, expr) ->
       Printf.sprintf "%s%s := %s"
         (build_offset padding)
@@ -435,7 +439,22 @@ and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
       Printf.sprintf "%s %s %s"
         (string_of_argument lhs)
         (string_of_flat_binop op)
-        (string_of_argument rhs))
+        (string_of_argument rhs)
+    | Allocate (t, n) ->
+      Printf.sprintf "Allocate %s (%d)"
+        (string_of_type t)
+        (n)
+    | VectorRef (arg, i) ->
+      Printf.sprintf "%s[%d]"
+        (string_of_argument arg)
+        (i)
+    | VectorSet (v, i, b) ->
+      Printf.sprintf "%s[%d] <- %s"
+        (string_of_argument v)
+        (i)
+        (string_of_argument b)
+    | Void -> "Void"
+    | Global s -> Printf.sprintf "Global %s" s)
 
 and string_of_flat_binop ?(padding=0) node : string = Ast.Flat.(
     match node with

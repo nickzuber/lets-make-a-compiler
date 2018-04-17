@@ -97,7 +97,7 @@ module rec Flat : sig
     | Argument of argument
     | UnaryExpression of unops * argument
     | BinaryExpression of binops * argument * argument
-    | Allocate of t
+    | Allocate of t * int
     | VectorRef of argument * int
     | VectorSet of argument * int * argument
     | Void

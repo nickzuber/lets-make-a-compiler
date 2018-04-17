@@ -3,6 +3,7 @@ open Ast.Flat
 
 exception Illegal_variable_reference of string
 exception Incorrect_step of string
+exception Found_unused_expression_type
 
 let flat_unop_of_typed_standard_unop = function
   | TypedStandard.Minus -> Minus
@@ -22,32 +23,32 @@ let flat_binop_of_typed_standard_binop = function
  * is essentially a list of statements that we want to pass on. Newly created variables will be given
  * the name of something more meaningful (`binary_expression_3`, `unary_expression_2`, etc.).
  * In this phase, booleans are converted to their integer counterparts. *)
-let rec flatten (expr : TypedStandard.expression) (count : int) (env : (string, Ast.t) Hashtbl.t)
+let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (string, Ast.t) Hashtbl.t)
   : int * (string, Ast.t) Hashtbl.t * Flat.statement list * Flat.argument =
   match expr with
-  | TypedStandard.LetExpression (name, (tb, binding), (td, body)) ->
-    let (count', vars_binding, statements_binding, argument_binding) = flatten binding count env in
-    let (count'', vars_body, statements_body, argument_body) = flatten body count' env in
+  | (t, TypedStandard.LetExpression (name, (tb, binding), (td, body))) ->
+    let (count', vars_binding, statements_binding, argument_binding) = flatten (tb, binding) count env in
+    let (count'', vars_body, statements_body, argument_body) = flatten (td, body) count' env in
     let assign = Assignment (name, Argument argument_binding) in
     Hashtbl.add env name td;
     (count'',
      env,  (* vars_binding @ vars_body @ [name], *)
      statements_binding @ [assign] @ statements_body,
      argument_body)
-  | TypedStandard.UnaryExpression (op, (t, expr)) ->
+  | (t, TypedStandard.UnaryExpression (op, (tt, expr))) ->
     let var_unexp = "unary_expression_" ^ (string_of_int count) in
-    let (count', vars, statements, argument) = flatten expr (count + 1) env in
+    let (count', vars, statements, argument) = flatten (tt, expr) (count + 1) env in
     let op' = flat_unop_of_typed_standard_unop op in
     let assign = Assignment (var_unexp, UnaryExpression (op', argument)) in
-    Hashtbl.add env var_unexp t;
+    Hashtbl.add env var_unexp tt;
     (count',
      env,  (* vars @ [var_unexp] *)
      statements @ [assign],
      Variable var_unexp)
-  | TypedStandard.BinaryExpression (op, (tl, lhs), (tr, rhs)) ->
+  | (t, TypedStandard.BinaryExpression (op, (tl, lhs), (tr, rhs))) ->
     let var_binexp = "binary_expression_" ^ (string_of_int count) in
-    let (count', vars_lhs, statements_lhs, argument_lhs) = flatten lhs (count + 1) env in
-    let (count'', vars_rhs, statements_rhs, argument_rhs) = flatten rhs (count' + 1) env in
+    let (count', vars_lhs, statements_lhs, argument_lhs) = flatten (tl, lhs) (count + 1) env in
+    let (count'', vars_rhs, statements_rhs, argument_rhs) = flatten (tr, rhs) (count' + 1) env in
     let op' = flat_binop_of_typed_standard_binop op in
     let assign = Assignment (var_binexp, BinaryExpression (op', argument_lhs, argument_rhs)) in
     Hashtbl.add env var_binexp T_INT;
@@ -55,11 +56,11 @@ let rec flatten (expr : TypedStandard.expression) (count : int) (env : (string, 
      env,  (* vars_lhs @ vars_rhs @ [var_binexp] *)
      statements_lhs @ statements_rhs @ [assign],
      Variable var_binexp)
-  | TypedStandard.IfExpression ((tt, test), (tc, consequent), (ta, alternate)) ->
+  | (t, TypedStandard.IfExpression ((tt, test), (tc, consequent), (ta, alternate))) ->
     let var_if = "if_statement_" ^ (string_of_int count) in
-    let (count', vars_t, statements_t, argument_t) = flatten test (count + 1) env in
-    let (count'', vars_c, statements_c, argument_c) = flatten consequent (count' + 1) env in
-    let (count''', vars_a, statements_a, argument_a) = flatten alternate (count'' + 1) env in
+    let (count', vars_t, statements_t, argument_t) = flatten (tt, test) (count + 1) env in
+    let (count'', vars_c, statements_c, argument_c) = flatten (tc, consequent) (count' + 1) env in
+    let (count''', vars_a, statements_a, argument_a) = flatten (ta, alternate) (count'' + 1) env in
     let if_statement =
       IfStatement
         ((BinaryExpression
@@ -73,7 +74,7 @@ let rec flatten (expr : TypedStandard.expression) (count : int) (env : (string, 
      env,  (* [var_if] @ vars_t @ vars_c @ vars_a *)
      statements_t @ [if_statement],
      Variable var_if)
-  | TypedStandard.Read ->
+  | (t, TypedStandard.Read) ->
     let var_read = "read_" ^ (string_of_int count) in
     let assign = Assignment (var_read, Read) in
     Hashtbl.add env var_read T_INT;
@@ -81,17 +82,60 @@ let rec flatten (expr : TypedStandard.expression) (count : int) (env : (string, 
      env,  (* [var_read] *)
      [assign],
      Variable var_read)
-  | TypedStandard.Variable v -> (count, env, [], (Variable v))
-  | TypedStandard.Int n -> (count, env, [], Int n)
-  | TypedStandard.True -> (count, env, [], Int 1)
-  | TypedStandard.False -> (count, env, [], Int 0)
-  | _ -> (count, env, [], Int (-1)) (* TODO: Vector, VectorRef, VectorSet *)
+  | (t, TypedStandard.Variable v) -> (count, env, [], (Variable v))
+  | (t, TypedStandard.Int n) -> (count, env, [], Int n)
+  | (t, TypedStandard.True) -> (count, env, [], Int 1)
+  | (t, TypedStandard.False) -> (count, env, [], Int 0)
+  | (t, TypedStandard.Global s) ->
+    let global_variable = "global_" ^ (string_of_int count) in
+    let assign = Assignment (global_variable, Global s) in
+    Hashtbl.add env global_variable T_INT;
+    (count,
+     env,
+     [assign],
+     Variable global_variable)
+  | (t, TypedStandard.Void) -> (count, env, [], Int 0)
+  | (t, TypedStandard.Allocate (tt, n)) ->
+    let vector_variable = "allocate_" ^ (string_of_int count) in
+    let assign = Assignment (vector_variable, Allocate (tt, n)) in
+    Hashtbl.add env vector_variable t;
+    (count,
+     env,
+     [assign],
+     Variable vector_variable)
+  | (t, TypedStandard.VectorSet ((tv, vec_expr), i, (tt, body_expr))) ->
+    let vectorset_variable = "vector-set_" ^ (string_of_int count) in
+    let (count', vars_vec, statements_vec, argument_vec) = flatten (tv, vec_expr) (count + 1) env in
+    let (count'', vars_body, statements_body, argument_body) = flatten (tt, body_expr) (count' + 1) env in
+    let assign = Assignment (vectorset_variable, VectorSet (argument_vec, i, argument_body)) in
+    Hashtbl.add env vectorset_variable t;
+    (count'',
+     env,
+     statements_vec @ statements_body @ [assign],
+     Variable vectorset_variable)
+  | (t, TypedStandard.VectorRef ((tv, vec_expr), i)) ->
+    let vectorref_variable = "vector-ref_" ^ (string_of_int count) in
+    let (count', vars_vec, statements_vec, argument_vec) = flatten (tv, vec_expr) (count + 1) env in
+    let assign = Assignment (vectorref_variable, VectorRef (argument_vec, i)) in
+    Hashtbl.add env vectorref_variable t;
+    (count',
+     env,
+     statements_vec @ [assign],
+     Variable vectorref_variable)
+  | (t, TypedStandard.Collect) ->
+    let collect_variable = "collect_" ^ (string_of_int count) in
+    Hashtbl.add env collect_variable t;
+    (count,
+     env,
+     [Collect],
+     Variable collect_variable)
+  | _ -> raise Found_unused_expression_type
 
 (* Given a typed program, transform it into a flat program such that all forms of nesting is removed. *)
 let transform (prog : program) : program =
   let count = 0 in
   let env = Hashtbl.create 53 in
   let ((_, vars, statements, argument), argument_type) = match prog with
-    | ProgramTyped (t, expr) -> ((flatten expr count env), t)
+    | ProgramTyped (t, expr) -> ((flatten (t, expr) count env), t)
     | _ -> raise (Incorrect_step "expected type ProgramTyped") in
   FlatProgram (vars, statements, argument, argument_type)

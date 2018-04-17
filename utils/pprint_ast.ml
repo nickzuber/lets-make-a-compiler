@@ -327,6 +327,11 @@ and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assem
     | LEAVEQ ->
       Printf.sprintf "%sleaveq"
         (build_offset padding)
+    | LEAQ (a, b) ->
+      Printf.sprintf "%sleaq \t%s, %s"
+        (build_offset padding)
+        (string_of_assembly_arg a)
+        (string_of_assembly_arg b)
     | ADDQ (a, b) ->
       Printf.sprintf "%saddq \t%s, %s"
         (build_offset padding)
@@ -412,13 +417,16 @@ and string_of_arg ?(padding=0) arg : string = Ast.Select.(
     match arg with
     | INT n -> Printf.sprintf "%d" n
     | VARIABLE v -> Printf.sprintf "%s" v
+    | GLOBAL s -> Printf.sprintf "GLOBAL %s" s
     | BYTE_REGISTER r -> Printf.sprintf "%s" r
-    | REGISTER r -> Printf.sprintf "%%%s" r)
+    | REGISTER r -> Printf.sprintf "%%%s" r
+    | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r)
 
 and string_of_assembly_arg ?(padding=0) arg : string = Ast.Assembly.(
     match arg with
     | INT n -> Printf.sprintf "$%d" n
     | REGISTER r -> Printf.sprintf "%%%s" r
+    | GLOBAL s -> Printf.sprintf "_%s(%%rip)" s
     | BYTE_REGISTER r -> Printf.sprintf "%%%s" r
     | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r)
 

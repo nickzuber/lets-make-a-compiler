@@ -77,16 +77,20 @@ let prog'= Program
 let prog = Program
     (Vector
        [ Int 1
-       ; Int 2
        ; False
-       ; Int 3
        ])
 
 let sp = Program
     (LetExpression
-       ("x",
-        Int 1,
-        False))
+       ("y",
+        (Int 1),
+        (LetExpression
+           ("x",
+            (Int 2),
+            (BinaryExpression
+               ((Compare GreaterThan),
+                (Variable "x"),
+                (Variable "y")))))))
 
 let prog_tons_of_variables = Program
     (pow2 3)

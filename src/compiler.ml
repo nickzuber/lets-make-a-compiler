@@ -6,6 +6,7 @@ let compile (prog : program) : program =
   prog |> Macros.transform
   |> Uniquify.transform
   |> Typecheck.transform
+  |> Expose.transform
   |> Flatten.transform
   |> Selectify.transform
   |> Assignify.transform ~quiet:true

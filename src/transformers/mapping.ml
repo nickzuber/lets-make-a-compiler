@@ -2,6 +2,8 @@ open Ast
 open Ast.Assembly
 open Polyfill
 
+exception Debugging of string
+
 module Bfs = Interference_graph.Bfs
 
 let naive_interference_ts = ref 0.
@@ -20,43 +22,43 @@ end = Liveness
 (* Mapping of int to general purpose registers. *)
 let int_to_valid_register = Hashtbl.create 8
 let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
-    [(0, REGISTER "rcx");
-     (1, REGISTER "rdx");
-     (2, REGISTER "r8");
-     (3, REGISTER "r9");
-     (4, REGISTER "r10");
-     (5, REGISTER "r11")]
+    [ (0, REGISTER "rcx")
+    ; (1, REGISTER "rdx")
+    ; (2, REGISTER "r8")
+    ; (3, REGISTER "r9")
+    ; (4, REGISTER "r10") ]
 
 (* Caller-save registers should be pushed onto the stack BEFORE a function is called,
  * and restored AFTER it's done. When you do this, you need to make sure the stack is aligned
  * before you make the call instrcution. *)
 let caller_save_registers =
-  [REGISTER "rax";
-   REGISTER "rcx";
-   REGISTER "rdx";
-   REGISTER "r8";
-   REGISTER "r9";
-   REGISTER "r10";
-   REGISTER "r11";
-   REGISTER "rsi";
-   REGISTER "rdi"]
+  [ REGISTER "rax"
+  ; REGISTER "rcx"
+  ; REGISTER "rdx"
+  ; REGISTER "r8"
+  ; REGISTER "r9"
+  ; REGISTER "r10"
+  ; REGISTER "r11"
+  ; REGISTER "rsi"
+  ; REGISTER "rdi" ]
 
 (* Callee-save registers should be pushed onto the stack AFTER a function is called,
  * like when you're inside of the function block, and restored BEFORE it's done. *)
-let callee_save_registers =
-  [REGISTER "rsp";
-   REGISTER "rbp";
-   REGISTER "rbx";
-   REGISTER "r12";
-   REGISTER "r13";
-   REGISTER "r14";
-   REGISTER "r15"]
+let callee_save_registers =  (** unused *)
+  [ REGISTER "rsp"
+  ; REGISTER "rbp"
+  ; REGISTER "rbx"
+  ; REGISTER "r12"
+  ; REGISTER "r13"
+  ; REGISTER "r14"
+  ; REGISTER "r15" ]
 
 (* Get the arguments that are considered for writes, regardless of being a variable or not. *)
 let get_write_args (instr : Select.instruction) : Select.arg list =
   match instr with
   | Select.SUB (src, dest) -> [dest]
   | Select.ADD (src, dest) -> [dest]
+  | Select.CMP (src, dest) -> [dest]
   | Select.MOV (src, dest) -> [dest]
   | Select.NEG (arg) -> [arg]
   | _ -> []
@@ -66,6 +68,7 @@ let get_read_args (instr : Select.instruction) : Select.arg list =
   match instr with
   | Select.SUB (src, dest) -> [src; dest]
   | Select.ADD (src, dest) -> [src; dest]
+  | Select.CMP (src, dest) -> [src; dest]
   | Select.MOV (src, dest) -> [src]
   | Select.NEG (arg) -> [arg]
   | _ -> []
@@ -99,7 +102,6 @@ let rec compute_liveness (instr : Select.instruction) (mapping : (Select.instruc
     let read_variables = get_read_variables instr in
     (* Take previous liveness, subtract the stuff we write, add the stuff we read *)
     let liveness = Set.union (Set.difference previous_liveness write_variables) read_variables in
-    Printf.printf "";
     let mapping' = Immutable_hashtbl.add mapping instr liveness in
     (mapping', liveness)
 
@@ -167,17 +169,31 @@ let build_liveness_matrix (vars : string list) (mapping : Liveness_mapping.t) =
   naive_interference_ts := ((Unix.gettimeofday ()) -. start);
   matrix
 
+let print_liveness_mapping liveness_mapping =
+  Hashtbl.iter (fun instr liveness ->
+      Printf.printf "\n\x1b[90m[%s]\x1b[39m: " (Pprint_ast.string_of_instruction instr);
+      Hashtbl.iter (fun arg _ ->
+          match arg with
+          | Select.VARIABLE name -> Printf.printf "\n  %s" name
+          | _ -> ()) liveness;
+      print_endline ""
+    ) liveness_mapping
+
 let attempt_to_add_edge liveness args d graph vt =
-  Set.for_each liveness (fun v ->
-      let should_add_edge = List.for_all (fun arg -> arg <> v) args in
-      if should_add_edge then
-        (let v' = Hashtbl.find vt v and d' = Hashtbl.find vt d in
-         Interference_graph.G.add_edge graph d' v'))
+  match d with
+  | Select.VARIABLE _ ->
+    Set.for_each liveness (fun v ->
+        let should_add_edge = List.for_all (fun arg -> arg <> v) args in
+        if should_add_edge then
+          (let v' = Hashtbl.find vt v and d' = Hashtbl.find vt d in
+           Interference_graph.G.add_edge graph d' v'))
+  | _ -> ()  (* if dest isn't a variable, we don't consider for reg mapping *)
 
 let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : Interference_graph.G.t =
   let start = Unix.gettimeofday () in
   let vars' = List.map (fun var -> Select.VARIABLE var) vars in
   let (graph, vt) = Interference_graph.init vars' in
+  print_liveness_mapping mapping;
   Hashtbl.iter (fun instr liveness ->
       match instr with
       | Select.PUSH d -> attempt_to_add_edge liveness [d] d graph vt
@@ -187,7 +203,7 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : I
       | Select.SUB (_s, d) -> attempt_to_add_edge liveness [d] d graph vt
       | Select.NEG d -> attempt_to_add_edge liveness [d] d graph vt
       | Select.XOR (s, d) -> ()
-      | Select.CMP (s, d) -> ()
+      | Select.CMP (s, d) -> attempt_to_add_edge liveness [d] d graph vt
       | Select.SET (_cc, d) -> ()
       | Select.MOVZB (s, d) -> ()
       | _ -> ()) mapping;

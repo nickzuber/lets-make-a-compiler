@@ -4,6 +4,12 @@ open Ast.Select
 exception Incorrect_step of string
 exception Unhandled_if_test_expression
 
+let int_of_tag = function
+  | T_INT -> 1
+  | T_BOOL -> 2
+  | T_VECTOR _ -> 3
+  | T_VOID -> 4
+
 let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
   match arg with
   | Flat.Int n -> INT n
@@ -12,6 +18,41 @@ let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
 let rec select_single_statement (stmt : Flat.statement) : Select.instruction list = Flat.(
     match stmt with
     | Assignment (var, expr) -> (match expr with
+        | Allocate (t, n) ->
+          let free_ptr = REGISTER free_ptr_reg in
+          let free_ptr_deref = REFERENCE (free_ptr_reg, 0) in
+          (* recall that `n` is already size_in_bytes from expose pass *)
+          let var' = VARIABLE var in
+          [ MOV (GLOBAL "free_ptr", var')
+          ; ADD (INT n, GLOBAL "free_ptr")
+          ; MOV (var', free_ptr)
+          ; MOV (INT (int_of_tag (T_VECTOR [])), free_ptr_deref) ]
+        | VectorRef (vec, i) ->
+          let vec' = arg_of_flat_argument vec in
+          let free_ptr = REGISTER free_ptr_reg in
+          (* field + tag *)
+          let offset = i * 8 + 8 in
+          let free_ptr_deref = REFERENCE (free_ptr_reg, offset) in
+          let var' = VARIABLE var in
+          [ MOV (vec', free_ptr)
+          ; MOV (free_ptr_deref, var') ]
+        | VectorSet (vec, i, body) ->
+          let vec' = arg_of_flat_argument vec in
+          let body' = arg_of_flat_argument body in
+          let free_ptr = REGISTER free_ptr_reg in
+          (* field + tag *)
+          let offset = i * 8 + 8 in
+          let free_ptr_deref = REFERENCE (free_ptr_reg, offset) in
+          let var' = VARIABLE var in
+          [ MOV (vec', free_ptr)
+          ; MOV (body', free_ptr_deref)
+          ; MOV (INT 0, var') ]
+        | Void ->
+          let var' = VARIABLE var in
+          [ MOV (INT 0, var') ]
+        | Global s ->
+          let var' = VARIABLE var in
+          [ MOV (GLOBAL s, var') ]
         | Argument arg ->
           let src = arg_of_flat_argument arg in
           let dest = VARIABLE var in
@@ -83,7 +124,13 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
           let then_instructions = select consequent_instrs  in
           let else_instructions = select alternate_instrs in
           [IF_STATEMENT (CMP (rhs', lhs'), then_instructions, else_instructions)]
-        | _ -> raise Unhandled_if_test_expression))
+        | _ -> raise Unhandled_if_test_expression)
+    | Collect ->
+      let rootstack_ptr = REGISTER rootstack_ptr_reg in
+      let function_argument_reg = REGISTER "rdi" in
+      [ MOV (rootstack_ptr, function_argument_reg)
+      (* if `collect` took size, we'd pass that into %rsi here *)
+      ; CALL ("_collect") ])
 
 and select (stmts : Flat.statement list) : Select.instruction list =
   match stmts with

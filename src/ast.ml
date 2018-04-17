@@ -120,7 +120,9 @@ module rec Select : sig
     | INT of int
     | VARIABLE of string
     | REGISTER of string
+    | REFERENCE of string * int
     | BYTE_REGISTER of string
+    | GLOBAL of string (* label *)
   type instruction =
     | IF_STATEMENT of instruction * instruction list * instruction list
     | ADD of arg * arg
@@ -152,6 +154,7 @@ module rec Assembly : sig
     | REGISTER of string
     | REFERENCE of string * int
     | BYTE_REGISTER of string
+    | GLOBAL of string
   type instruction =
     | ADDQ of arg * arg
     | SUBQ of arg * arg
@@ -167,6 +170,7 @@ module rec Assembly : sig
     | MOVZBQ of arg * arg (* byte-register, register *)
     | JUMP of cc * string (* cc, label *)
     | LABEL of string (* label *)
+    | LEAQ of arg * arg
     | LEAVEQ
 end = Assembly
 
@@ -176,3 +180,6 @@ type program =
   | FlatProgram of (string, t) Hashtbl.t * Flat.statement list * Flat.argument * t
   | SelectProgram of t * (string, t) Hashtbl.t * Select.instruction list * Select.instruction
   | AssemblyProgram of t * Assembly.instruction list
+
+let free_ptr_reg = "r11"
+let rootstack_ptr_reg = "r15"

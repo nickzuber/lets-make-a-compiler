@@ -5,21 +5,23 @@ open Polyfill
 exception Incorrect_step of string
 exception Unexpected_argument
 
+let tag_of_type = function
+  | T_BOOL -> "ty_bool"
+  | T_INT -> "ty_int"
+  | T_VOID -> "ty_void"
+  | T_VECTOR _ -> "ty_vector"
+
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
 let register_of_variable (mapping : (string, Assembly.arg) Hashtbl.t) (var : string) : Assembly.arg =
   Hashtbl.find mapping var
-
-(* Call the correct function based on the return type of the program. *)
-let get_print_function (t : Ast.t) : Assembly.instruction =
-  match t with
-  | T_BOOL -> CALLQ "_print_bool"
-  | T_INT -> CALLQ "_print_int"
 
 (* Take a Select arg and creates a Assembly arg from it. This accounts for the variable mapping. *)
 let arg_of_select_arg (mapping : (string, Assembly.arg) Hashtbl.t) (arg : Select.arg) : Assembly.arg =
   match arg with
   | Select.INT n -> INT n
   | Select.REGISTER r -> REGISTER r
+  | Select.GLOBAL s -> GLOBAL s
+  | Select.REFERENCE (r, offset) -> REFERENCE (r, offset)
   | Select.VARIABLE v -> register_of_variable mapping v
   | Select.BYTE_REGISTER r -> BYTE_REGISTER r
 
@@ -44,6 +46,8 @@ let fix_illegal_instruction_combinations (instruction : Assembly.instruction) : 
   | SUBQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
     [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
      SUBQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
+  | MOVQ (REGISTER x, REGISTER y) when x = y ->
+    []
   | MOVQ (REFERENCE (src, src_offset), REFERENCE (dest, dest_offset)) ->
     [MOVQ (REFERENCE (src, src_offset), REGISTER "rax");
      MOVQ (REGISTER "rax", REFERENCE (dest, dest_offset))]
@@ -89,9 +93,7 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
      PUSHQ (REGISTER "r8");
      PUSHQ (REGISTER "r9");
      PUSHQ (REGISTER "r10");
-     PUSHQ (REGISTER "r11");
      CALLQ label;
-     POPQ (REGISTER "r11");
      POPQ (REGISTER "r10");
      POPQ (REGISTER "r9");
      POPQ (REGISTER "r8");
@@ -161,20 +163,35 @@ let transform ?(quiet=false) (prog : program) : program =
       let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
       (* Push stack pointer down far enough to store a variable in each memory location. *)
       let prepare_memory =
-        [(PUSHQ (REGISTER "rbp"));
-         (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")));
-         (SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp"))] in
+        [ (PUSHQ (REGISTER "rbp"))
+        ; (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")))
+        ; PUSHQ (REGISTER "r14")
+        ; PUSHQ (REGISTER "r13")
+        ; PUSHQ (REGISTER "r12")
+        ; PUSHQ (REGISTER "rbx")
+        ; (SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp"))
+        ; MOVQ (INT 1024, REGISTER "rdi")
+        ; MOVQ (INT 1024, REGISTER "rsi")
+        ; (CALLQ "_initialize")
+        ; MOVQ (GLOBAL "rootstack_begin", REGISTER rootstack_ptr_reg)] in
       let instructions = assign mapping instructions 0 in
-      let print_function_callq = get_print_function t in
+      let global_tag = GLOBAL (tag_of_type t) in
       let prepare_return = (match final_instruction with
           | Select.RET arg ->
             let arg' = arg_of_select_arg mapping arg in
-            [MOVQ (arg', REGISTER "rax");
-             MOVQ (REGISTER "rax", REGISTER "rdi");
-             print_function_callq;
-             MOVQ (INT 0, REGISTER "rax");
-             LEAVEQ;  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * size), REGISTER "rsp")` *)
-             RETQ (REGISTER "rax")]
+            [MOVQ (arg', REGISTER "rax")
+            ; LEAQ (global_tag, REGISTER "rdi")
+            ; MOVQ (REGISTER "rax", REGISTER "rsi")
+            ; CALLQ "_print_result"
+            ; MOVQ (INT 0, REGISTER "rax")
+            ; ADDQ (INT 0, REGISTER "rsp")
+            ; POPQ (REGISTER "rbx")
+            ; POPQ (REGISTER "r12")
+            ; POPQ (REGISTER "r13")
+            ; POPQ (REGISTER "r14")
+            ; LEAVEQ  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * size), REGISTER "rsp")` *)
+            ; POPQ (REGISTER "rbp")
+            ; RETQ (REGISTER "rax")]
           | _ -> raise (Unexpected_argument)) in
       (t, prepare_memory @ instructions @ prepare_return)
     | _ -> raise (Incorrect_step "expected type SelectProgram") in

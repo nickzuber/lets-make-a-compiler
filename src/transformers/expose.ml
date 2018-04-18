@@ -13,7 +13,7 @@ let rec expose (expr : typed_expression) : typed_expression =
   | (t, Vector exprs) ->
     let exprs_with_vars = List.fold_left (fun acc expr ->
         let local_uid = Dangerous_guid.get () in
-        let vector_expression_name = Printf.sprintf "vector_expression_%d" local_uid in
+        let vector_expression_name = Printf.sprintf "ve%d" local_uid in
         let binding = expr in
         let body = (T_VOID, Void) in
         (T_VOID, LetExpression (vector_expression_name, binding, body)) :: acc) [] exprs
@@ -33,13 +33,14 @@ let rec expose (expr : typed_expression) : typed_expression =
           (T_INT, Global "fromspace_end")))
     in
     let uid = Dangerous_guid.get () in
-    let collect_variable_name = Printf.sprintf "maybe_collect_%d" uid in
-    let allocate_variable_name = Printf.sprintf "allocate_%d" uid in
+    let collect_variable_name = Printf.sprintf "maybe_collect%d" uid in
+    let allocate_variable_name = Printf.sprintf "allocate%d" uid in
+    let allocate_variable_wrapper_name = Printf.sprintf "_allocatewrapper%d" uid in
     let vector_set_expressions = List.mapi (fun i expr ->
         match expr with
         | (t_let, LetExpression (name, binding, body)) ->
           let local_uid = Dangerous_guid.get () in
-          let vector_set_name = Printf.sprintf "_vectorset_%d" local_uid in
+          let vector_set_name = Printf.sprintf "_vs%d" local_uid in
           (T_VOID, LetExpression
              ((vector_set_name),
               (t_let, VectorSet
@@ -60,17 +61,20 @@ let rec expose (expr : typed_expression) : typed_expression =
                    (T_VOID, Collect),
                    (T_VOID, Void))),
                (T_VOID, Void))
-          ; T_VOID, LetExpression  (* assign the allocate call *)
+          ; t, LetExpression  (* assign the allocate call *)
               ((allocate_variable_name),
                (t, Allocate (t, size_in_bytes)),
-               (T_VOID, Void))
+               (t, Variable allocate_variable_name))
           ]
           @
           vector_set_expressions))  (* set all the elements of allocate to the vector expressions *)
     in
-    (* The type being returned here is same as `t` *)
-    let (_, exposed_expr') = Macros.desugar_typed exposed_expr in
-    (t, exposed_expr')
+    (* The type being returned here is T_VOID *)
+    let exposed_expr' = Macros.desugar_typed exposed_expr in
+    (t, LetExpression
+       ((allocate_variable_wrapper_name),
+        (exposed_expr'),
+        (t, Variable allocate_variable_name)))
   | (t, LetExpression (name, binding, body)) ->
     let binding' = expose binding in
     let body' = expose body in

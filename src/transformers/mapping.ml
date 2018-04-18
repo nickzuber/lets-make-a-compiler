@@ -169,16 +169,6 @@ let build_liveness_matrix (vars : string list) (mapping : Liveness_mapping.t) =
   naive_interference_ts := ((Unix.gettimeofday ()) -. start);
   matrix
 
-let print_liveness_mapping liveness_mapping =
-  Hashtbl.iter (fun instr liveness ->
-      Printf.printf "\n\x1b[90m[%s]\x1b[39m: " (Pprint_ast.string_of_instruction instr);
-      Hashtbl.iter (fun arg _ ->
-          match arg with
-          | Select.VARIABLE name -> Printf.printf "\n  %s" name
-          | _ -> ()) liveness;
-      print_endline ""
-    ) liveness_mapping
-
 let attempt_to_add_edge liveness args d graph vt =
   match d with
   | Select.VARIABLE _ ->
@@ -193,7 +183,6 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : I
   let start = Unix.gettimeofday () in
   let vars' = List.map (fun var -> Select.VARIABLE var) vars in
   let (graph, vt) = Interference_graph.init vars' in
-  print_liveness_mapping mapping;
   Hashtbl.iter (fun instr liveness ->
       match instr with
       | Select.PUSH d -> attempt_to_add_edge liveness [d] d graph vt

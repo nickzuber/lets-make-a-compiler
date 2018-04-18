@@ -5,6 +5,14 @@ exception Illegal_variable_reference of string
 exception Incorrect_step of string
 exception Found_unused_expression_type
 
+let hashtbl_add_safe tbl name value =
+  try
+    let _ = Hashtbl.find tbl name in
+    ()
+  with
+  | Not_found ->
+    Hashtbl.add tbl name value
+
 let flat_unop_of_typed_standard_unop = function
   | TypedStandard.Minus -> Minus
   | TypedStandard.Not -> Not
@@ -30,17 +38,17 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
     let (count', vars_binding, statements_binding, argument_binding) = flatten (tb, binding) count env in
     let (count'', vars_body, statements_body, argument_body) = flatten (td, body) count' env in
     let assign = Assignment (name, Argument argument_binding) in
-    Hashtbl.add env name td;
+    hashtbl_add_safe env name td;
     (count'',
      env,  (* vars_binding @ vars_body @ [name], *)
      statements_binding @ [assign] @ statements_body,
      argument_body)
   | (t, TypedStandard.UnaryExpression (op, (tt, expr))) ->
-    let var_unexp = "unary_expression_" ^ (string_of_int count) in
+    let var_unexp = "unary_expression" ^ (string_of_int count) in
     let (count', vars, statements, argument) = flatten (tt, expr) (count + 1) env in
     let op' = flat_unop_of_typed_standard_unop op in
     let assign = Assignment (var_unexp, UnaryExpression (op', argument)) in
-    Hashtbl.add env var_unexp tt;
+    hashtbl_add_safe env var_unexp tt;
     (count',
      env,  (* vars @ [var_unexp] *)
      statements @ [assign],
@@ -51,7 +59,7 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
     let (count'', vars_rhs, statements_rhs, argument_rhs) = flatten (tr, rhs) (count' + 1) env in
     let op' = flat_binop_of_typed_standard_binop op in
     let assign = Assignment (var_binexp, BinaryExpression (op', argument_lhs, argument_rhs)) in
-    Hashtbl.add env var_binexp T_INT;
+    hashtbl_add_safe env var_binexp T_INT;
     (count'',
      env,  (* vars_lhs @ vars_rhs @ [var_binexp] *)
      statements_lhs @ statements_rhs @ [assign],
@@ -69,15 +77,15 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
              (argument_t))),
          statements_c @ [Assignment (var_if, (Argument argument_c))],
          statements_a @ [Assignment (var_if, (Argument argument_a))]) in
-    Hashtbl.add env var_if tc;  (* tc or ta since both same type *)
+    hashtbl_add_safe env var_if tc;  (* tc or ta since both same type *)
     (count''',
      env,  (* [var_if] @ vars_t @ vars_c @ vars_a *)
      statements_t @ [if_statement],
      Variable var_if)
   | (t, TypedStandard.Read) ->
-    let var_read = "read_" ^ (string_of_int count) in
+    let var_read = "read" ^ (string_of_int count) in
     let assign = Assignment (var_read, Read) in
-    Hashtbl.add env var_read T_INT;
+    hashtbl_add_safe env var_read T_INT;
     (count,
      env,  (* [var_read] *)
      [assign],
@@ -87,44 +95,44 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
   | (t, TypedStandard.True) -> (count, env, [], Int 1)
   | (t, TypedStandard.False) -> (count, env, [], Int 0)
   | (t, TypedStandard.Global s) ->
-    let global_variable = "global_" ^ (string_of_int count) in
+    let global_variable = "global" ^ (string_of_int count) in
     let assign = Assignment (global_variable, Global s) in
-    Hashtbl.add env global_variable T_INT;
+    hashtbl_add_safe env global_variable T_INT;
     (count,
      env,
      [assign],
      Variable global_variable)
   | (t, TypedStandard.Void) -> (count, env, [], Int 0)
   | (t, TypedStandard.Allocate (tt, n)) ->
-    let vector_variable = "allocate_" ^ (string_of_int count) in
+    let vector_variable = "allocate" ^ (string_of_int count) in
     let assign = Assignment (vector_variable, Allocate (tt, n)) in
-    Hashtbl.add env vector_variable t;
+    hashtbl_add_safe env vector_variable t;
     (count,
      env,
      [assign],
      Variable vector_variable)
   | (t, TypedStandard.VectorSet ((tv, vec_expr), i, (tt, body_expr))) ->
-    let vectorset_variable = "vector-set_" ^ (string_of_int count) in
+    let vectorset_variable = "vs" ^ (string_of_int count) in
     let (count', vars_vec, statements_vec, argument_vec) = flatten (tv, vec_expr) (count + 1) env in
     let (count'', vars_body, statements_body, argument_body) = flatten (tt, body_expr) (count' + 1) env in
     let assign = Assignment (vectorset_variable, VectorSet (argument_vec, i, argument_body)) in
-    Hashtbl.add env vectorset_variable t;
+    hashtbl_add_safe env vectorset_variable t;
     (count'',
      env,
      statements_vec @ statements_body @ [assign],
      Variable vectorset_variable)
   | (t, TypedStandard.VectorRef ((tv, vec_expr), i)) ->
-    let vectorref_variable = "vector-ref_" ^ (string_of_int count) in
+    let vectorref_variable = "vr" ^ (string_of_int count) in
     let (count', vars_vec, statements_vec, argument_vec) = flatten (tv, vec_expr) (count + 1) env in
     let assign = Assignment (vectorref_variable, VectorRef (argument_vec, i)) in
-    Hashtbl.add env vectorref_variable t;
+    hashtbl_add_safe env vectorref_variable t;
     (count',
      env,
      statements_vec @ [assign],
      Variable vectorref_variable)
   | (t, TypedStandard.Collect) ->
-    let collect_variable = "collect_" ^ (string_of_int count) in
-    Hashtbl.add env collect_variable t;
+    let collect_variable = "collect" ^ (string_of_int count) in
+    hashtbl_add_safe env collect_variable t;
     (count,
      env,
      [Collect],

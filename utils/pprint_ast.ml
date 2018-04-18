@@ -13,10 +13,11 @@ let rec string_of_program ?(padding=0) node : string =
   | Program expr ->
     let str = string_of_expression expr ~padding:(padding + padding_offset) in
     Printf.sprintf "%sProgram\n%s" (build_offset padding) str
-  | ProgramTyped expr ->
-    let str = string_of_typed_expression expr ~padding:(padding + padding_offset) in
-    Printf.sprintf "%sProgramTyped\n%s"
+  | ProgramTyped (t, expr) ->
+    let str = string_of_typed_expression (t, expr) ~padding:(padding + padding_offset) in
+    Printf.sprintf "%sProgramTyped \x1b[90m: %s\x1b[0m\n%s"
       (build_offset padding)
+      (string_of_type t)
       str
   | FlatProgram (vars, stmts, arg, arg_t) ->
     let vars_string = string_of_variables vars ~padding:(padding + padding_offset) in
@@ -119,8 +120,9 @@ and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
         (string_of_typed_unop op ~padding:(padding + padding_offset))
         (string_of_typed_expression operand ~padding:(padding + padding_offset))
     | LetExpression (v, binding, expr) ->
-      Printf.sprintf "%sLetExpression\n%s\n%s\n%s"
+      Printf.sprintf "%sLetExpression \x1b[90m: %s\x1b[0m\n%s\n%s\n%s"
         (build_offset padding)
+        (string_of_type t)
         (build_offset (padding + padding_offset) ^ v)
         (string_of_typed_expression binding ~padding:(padding + padding_offset))
         (string_of_typed_expression expr ~padding:(padding + padding_offset))
@@ -486,7 +488,7 @@ and string_of_type ?(padding=0) node : string = Ast.(
     match node with
     | T_VOID -> Printf.sprintf "%svoid" (build_offset padding)
     | T_VECTOR ts ->
-      Printf.sprintf "%s%s" (build_offset padding)
+      Printf.sprintf "%s(%s)" (build_offset padding)
         (List.fold_right (fun t acc -> match acc with
              | "" -> Printf.sprintf "%s" (string_of_type t)
              | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) ts "")

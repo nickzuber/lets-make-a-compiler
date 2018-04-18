@@ -9,6 +9,7 @@ let compile (prog : program) : program =
   |> Expose.transform
   |> Flatten.transform
   |> Selectify.transform
+  |> Selectify.remove_unused_variables
   |> Assignify.transform ~quiet:true
 
 (* Compiles the program decorated with print messages *)
@@ -25,6 +26,8 @@ let compile_and_debug (prog : program) : program =
   |> display_title "Flatten"
   |> Selectify.transform
   |> display_title "Select"
+  |> Selectify.remove_unused_variables
+  |> display_title "Select (cleaned)"
   |> Assignify.transform
   |> display_title "Assign"
 

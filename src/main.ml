@@ -77,7 +77,8 @@ let prog'= Program
 let prog = Program
     (Vector
        [ Int 1
-       ; False
+       ; Int 2
+       ; Int 3
        ])
 
 let sp = Program
@@ -97,7 +98,7 @@ let prog_tons_of_variables = Program
 
 let () =
   try
-    let prog' = prog in
+    let prog' = prog2 in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

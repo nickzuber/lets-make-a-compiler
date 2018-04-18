@@ -56,16 +56,16 @@ let rec desugar (expr : expression) : expression =
 let rec desugar_typed (expr : TypedStandard.typed_expression) : TypedStandard.typed_expression =
   let open Ast.TypedStandard in
   let uid = Dangerous_guid.get () in
-  let variable_name = Printf.sprintf "_desugar_typed_%d" uid in
+  let variable_name = Printf.sprintf "_ds%d" uid in
   match expr with
   | (t, Begin ([])) -> (t, Void)
   | (t, Begin (expr :: [])) ->
-    (t, LetExpression
+    (T_VOID, LetExpression
        (variable_name, expr, (T_VOID, Void)))
   | (t, Begin (expr :: rest)) ->
-    let rest' = desugar_typed (t, (Begin rest)) in
-    (t, (LetExpression
-           (variable_name, expr, rest')))
+    let (t', rest') = desugar_typed (t, (Begin rest)) in
+    (t', (LetExpression
+            (variable_name, expr, (t', rest'))))
   | (t, When (cond, exprs)) ->
     let exprs' = desugar_typed (t, (Begin exprs)) in
     (t, (IfExpression

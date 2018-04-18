@@ -5,10 +5,10 @@ exception Incorrect_step of string
 exception Unhandled_if_test_expression
 
 let int_of_tag = function
-  | T_INT -> 1
-  | T_BOOL -> 2
+  | T_VOID -> 0
+  | T_BOOL -> 1
+  | T_INT -> 2
   | T_VECTOR _ -> 3
-  | T_VOID -> 4
 
 let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
   match arg with
@@ -146,5 +146,40 @@ let transform (prog : program) : program =
       (* The final flat program argument is the result of running this program. *)
       let final_instr = arg_of_flat_argument arg in
       (t, (vars, instrs, RET final_instr))
-    | _ -> raise (Incorrect_step "expected type FlatProgram") in
+    | _ -> raise (Incorrect_step "expected type FlatProgram")
+  in
   SelectProgram (t, vars, instructions, final_instruction)
+
+(* if a variable is marked as unused, remove it *)
+let rec remove_unused_variables instrs =
+  match instrs with
+  | [] -> []
+  | instr :: [] -> remove_unused_variable instr
+  | instr :: rest -> (remove_unused_variable instr) @ (remove_unused_variables rest)
+
+(* if a variable is marked as unused, remove it *)
+and remove_unused_variable instr =
+  match instr with
+  | MOV (VARIABLE a, VARIABLE b) when a.[0] = '_' || b.[0] = '_' -> []
+  | MOV (_, VARIABLE b) when b.[0] = '_' -> []
+  | MOV (VARIABLE a, _) when a.[0] = '_' -> []
+  | _ -> [instr]
+
+(* if a variable is marked as unused, remove it *)
+let remove_unused_vars vars =
+  let tbl = Hashtbl.create 53 in
+  Hashtbl.iter (fun k v ->
+      if k.[0] = '_' then () else Hashtbl.add tbl k v) vars;
+  tbl
+
+(* remove all instructions that try to move around unused variables *)
+let remove_unused_variables prog =
+  let (t, v, i, f) = match prog with
+    | SelectProgram (t, vars, instructions, final_instruction) ->
+      let instructions' = remove_unused_variables instructions in
+      let vars' = remove_unused_vars vars in
+      (* assumes final instruction is a used variable/argument *)
+      (t, vars', instructions', final_instruction)
+    | _ -> raise (Incorrect_step "expected type FlatProgram")
+  in
+  SelectProgram (t, v, i, f)

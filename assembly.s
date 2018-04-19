@@ -1,18 +1,26 @@
 .data
-	ty_vector5:
-		.quad 3
-		.quad 2
-		.quad ty_int8
-		.quad ty_bool9
-    ty_bool9:
-		.quad 1
-		.quad 0
-	ty_int8:
+	ty_int14:
 		.quad 2
 		.quad 111
+	ty_bool15:
+		.quad 1
+		.quad 0
+	ty_int16:
+		.quad 2
+		.quad 222
+	ty_vector9:
+		.quad 3
+		.quad 4
+		.quad ty_int14
+		.quad ty_bool15
+		.quad ty_int16
+		.quad ty_bool17
+	ty_bool17:
+		.quad 1
+		.quad 1
 .text
 	.globl _main
-_main:
+_main:  
     pushq 	%rbp
     movq 	%rsp, %rbp
     pushq 	%r14
@@ -24,23 +32,23 @@ _main:
     movq 	$1024, %rsi
     callq 	_initialize
     movq 	_rootstack_begin(%rip), %r15
-    movq 	$111, %rdx
-    movq 	%rdx, %rcx
-    movq 	$0, %r8
-    movq 	%r8, %rcx
+    movq 	$111, %rcx
+    movq 	$0, %rcx
+    movq 	$222, %rcx
+    movq 	$1, %rcx
     movq 	_free_ptr(%rip), %rcx
-    movq 	%rcx, %r10
-    addq 	$2, %r10
+    movq 	%rcx, %r8
+    addq 	$4, %r8
     movq 	_fromspace_end(%rip), %rcx
-    cmpq 	%rcx, %r10
+    cmpq 	%rcx, %r8
     setg 	%al
     movzbq 	%al, %rcx
     movq 	$1, %rax
     cmpq 	%rcx, %rax
-    je	 	then17
+    je	 	then25
     movq 	$0, %rcx
-    jmp	 	if_end17
-then17:
+    jmp	 	if_end25
+then25:
     movq 	%r15, %rdi
     pushq 	%rcx
     pushq 	%rdx
@@ -53,17 +61,15 @@ then17:
     popq 	%r8
     popq 	%rdx
     popq 	%rcx
-    movq 	%r9, %rcx
-if_end17:
+    movq 	%rdx, %rcx
+if_end25:
     movq 	_free_ptr(%rip), %rcx
-    addq 	$32, _free_ptr(%rip)
+    addq 	$48, _free_ptr(%rip)
     movq 	%rcx, %r11
-    leaq 	ty_vector5(%rip), %rcx
+    leaq 	ty_vector9(%rip), %rcx
     movq 	%rcx, 0(%r11)
-    movq 	$2, 8(%r11)
-    movq 	%rcx, %r11
-    movq 	$0, %rcx
-    leaq 	ty_vector5(%rip), %rax
+    movq 	$4, 8(%r11)
+    movq 	%rcx, %rax
     leaq 	_ty_vector(%rip), %rdi
     movq 	%rax, %rsi
     callq 	_print_result

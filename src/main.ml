@@ -78,6 +78,8 @@ let prog = Program
     (Vector
        [ Int 111
        ; False
+       ; Int 222
+       ; True
        ])
 
 let sp = Program

@@ -103,9 +103,16 @@ let rec expose (expr : typed_expression) : typed_expression =
               ((allocate_variable_name),
                (t, Allocate (vector_name, t, len)),
                (t, Variable allocate_variable_name))
-          ]
-          @
-          vector_set_expressions))  (* set all the elements of allocate to the vector expressions *)
+          ]))
+      (* @
+         vector_set_expressions))
+      *)
+      (* set all the elements of allocate to the vector expressions
+         We don't need to add this any more because the fields of a vector
+         as "set" when we define it up in the `.data` section of the assembly.
+         We might defer writing all this `.data` writing till later and use these
+         vector sets to our advantage in doing that the right way.
+      *)
     in
     (* The type being returned here is T_VOID *)
     let exposed_expr' = Macros.desugar_typed exposed_expr in

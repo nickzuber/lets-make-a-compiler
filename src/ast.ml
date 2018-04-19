@@ -72,7 +72,7 @@ module rec TypedStandard : sig
     (* internal *)
     | Global of string
     | Collect
-    | Allocate of t * int
+    | Allocate of string * t * int
 end = TypedStandard
 
 (* Note: not really flat anymore with if statements. *)
@@ -97,7 +97,7 @@ module rec Flat : sig
     | Argument of argument
     | UnaryExpression of unops * argument
     | BinaryExpression of binops * argument * argument
-    | Allocate of t * int
+    | Allocate of string * t * int  (* name of global, type, len *)
     | VectorRef of argument * int
     | VectorSet of argument * int * argument
     | Void
@@ -123,6 +123,7 @@ module rec Select : sig
     | REFERENCE of string * int
     | BYTE_REGISTER of string
     | GLOBAL of string (* label *)
+    | TAG of string (* label *)
   type instruction =
     | IF_STATEMENT of instruction * instruction list * instruction list
     | ADD of arg * arg
@@ -135,6 +136,7 @@ module rec Select : sig
     | POP of arg
     | XOR of arg * arg
     | CMP of arg * arg
+    | LEAQ of arg * arg
     | SET of cc * arg (* cc, byte-register *)
     | MOVZB of arg * arg (* byte-register, register *)
     | JUMP of cc * string (* cc, label *)
@@ -155,6 +157,7 @@ module rec Assembly : sig
     | REFERENCE of string * int
     | BYTE_REGISTER of string
     | GLOBAL of string
+    | TAG of string
   type instruction =
     | ADDQ of arg * arg
     | SUBQ of arg * arg
@@ -183,3 +186,9 @@ type program =
 
 let free_ptr_reg = "r11"
 let rootstack_ptr_reg = "r15"
+
+let int_of_tag = function
+  | T_VOID -> 0
+  | T_BOOL -> 1
+  | T_INT -> 2
+  | T_VECTOR _ -> 3

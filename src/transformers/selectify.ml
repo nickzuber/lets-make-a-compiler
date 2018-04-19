@@ -1,14 +1,11 @@
 open Ast
 open Ast.Select
+open Polyfill
 
 exception Incorrect_step of string
 exception Unhandled_if_test_expression
 
-let int_of_tag = function
-  | T_VOID -> 0
-  | T_BOOL -> 1
-  | T_INT -> 2
-  | T_VECTOR _ -> 3
+let extra_variables : ((string, Ast.t) Hashtbl.t) = Hashtbl.create 53
 
 let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
   match arg with
@@ -18,20 +15,29 @@ let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
 let rec select_single_statement (stmt : Flat.statement) : Select.instruction list = Flat.(
     match stmt with
     | Assignment (var, expr) -> (match expr with
-        | Allocate (t, n) ->
+        | Allocate (gs, t, n) ->
+          (* Length of vector * 8 for items + 8 for the size of the tag + 8 for length of items. *)
+          let size_in_bytes = ((n * 8) + 8 + 8) in
           let free_ptr = REGISTER free_ptr_reg in
-          let free_ptr_deref = REFERENCE (free_ptr_reg, 0) in
+          let free_ptr_tag_deref = REFERENCE (free_ptr_reg, 0) in
+          let free_ptr_len_deref = REFERENCE (free_ptr_reg, 8) in
           (* recall that `n` is already size_in_bytes from expose pass *)
           let var' = VARIABLE var in
+          let guid = Dangerous_guid.get () in
+          let ptr_var_name = Printf.sprintf "ty_vector_ptr_var%d" guid in
+          Hashtbl.add extra_variables ptr_var_name t;
           [ MOV (GLOBAL "free_ptr", var')
-          ; ADD (INT n, GLOBAL "free_ptr")
+          (* ; CALL ("_show_freeptr") *)
+          ; ADD (INT size_in_bytes, GLOBAL "free_ptr")
           ; MOV (var', free_ptr)
-          ; MOV (INT (int_of_tag (T_VECTOR [])), free_ptr_deref) ]
+          ; LEAQ (TAG gs, VARIABLE ptr_var_name)
+          ; MOV (VARIABLE ptr_var_name, free_ptr_tag_deref)
+          ; MOV (INT n, free_ptr_len_deref) ]
         | VectorRef (vec, i) ->
           let vec' = arg_of_flat_argument vec in
           let free_ptr = REGISTER free_ptr_reg in
-          (* field + tag *)
-          let offset = i * 8 + 8 in
+          (* field + tag + len *)
+          let offset = (i * 8) + 8 + 8 in
           let free_ptr_deref = REFERENCE (free_ptr_reg, offset) in
           let var' = VARIABLE var in
           [ MOV (vec', free_ptr)
@@ -41,7 +47,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
           let body' = arg_of_flat_argument body in
           let free_ptr = REGISTER free_ptr_reg in
           (* field + tag *)
-          let offset = i * 8 + 8 in
+          let offset = (i * 8) + 8 + 8 in
           let free_ptr_deref = REFERENCE (free_ptr_reg, offset) in
           let var' = VARIABLE var in
           [ MOV (vec', free_ptr)
@@ -145,6 +151,8 @@ let transform (prog : program) : program =
       let instrs = select stmts in
       (* The final flat program argument is the result of running this program. *)
       let final_instr = arg_of_flat_argument arg in
+      Hashtbl.iter (fun k v ->
+          Hashtbl.add vars k v) extra_variables;
       (t, (vars, instrs, RET final_instr))
     | _ -> raise (Incorrect_step "expected type FlatProgram")
   in
@@ -160,9 +168,7 @@ let rec remove_unused_variables instrs =
 (* if a variable is marked as unused, remove it *)
 and remove_unused_variable instr =
   match instr with
-  | MOV (VARIABLE a, VARIABLE b) when a.[0] = '_' || b.[0] = '_' -> []
-  | MOV (_, VARIABLE b) when b.[0] = '_' -> []
-  | MOV (VARIABLE a, _) when a.[0] = '_' -> []
+  | MOV (INT _, VARIABLE a) when a.[0] = '_' -> []
   | _ -> [instr]
 
 (* if a variable is marked as unused, remove it *)
@@ -179,7 +185,7 @@ let remove_unused_variables prog =
       let instructions' = remove_unused_variables instructions in
       let vars' = remove_unused_vars vars in
       (* assumes final instruction is a used variable/argument *)
-      (t, vars', instructions', final_instruction)
+      (t, vars, instructions', final_instruction)
     | _ -> raise (Incorrect_step "expected type FlatProgram")
   in
   SelectProgram (t, v, i, f)

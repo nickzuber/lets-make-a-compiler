@@ -76,9 +76,8 @@ let prog'= Program
 
 let prog = Program
     (Vector
-       [ Int 1
-       ; Int 2
-       ; Int 3
+       [ Int 111
+       ; False
        ])
 
 let sp = Program
@@ -93,12 +92,23 @@ let sp = Program
                 (Variable "x"),
                 (Variable "y")))))))
 
+let prog_macro = Program
+    (LetExpression
+       ("x",
+        (Begin
+           [ Int 1
+           ; Int 2
+           ; Int 3
+           ; Int 4 ]),
+        Int 12))
+
+
 let prog_tons_of_variables = Program
     (pow2 3)
 
 let () =
   try
-    let prog' = prog2 in
+    let prog' = prog in
     if Settings.debug_mode then
       (display "Current program representation";
        prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)

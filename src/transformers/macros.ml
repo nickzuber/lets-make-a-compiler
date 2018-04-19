@@ -8,7 +8,7 @@ exception Incorrect_step of string
 (* Given an expression, remove any macros/sugar from the expression. *)
 let rec desugar (expr : expression) : expression =
   let uid = Dangerous_guid.get () in
-  let variable_name = Printf.sprintf "_desugar_%d" uid in
+  let variable_name = Printf.sprintf "_UNUSED_desugar_%d" uid in
   match expr with
   | When (cond, exprs) ->
     let exprs' = desugar (Begin exprs) in
@@ -56,7 +56,7 @@ let rec desugar (expr : expression) : expression =
 let rec desugar_typed (expr : TypedStandard.typed_expression) : TypedStandard.typed_expression =
   let open Ast.TypedStandard in
   let uid = Dangerous_guid.get () in
-  let variable_name = Printf.sprintf "_ds%d" uid in
+  let variable_name = Printf.sprintf "_UNUSED_ds%d" uid in
   match expr with
   | (t, Begin ([])) -> (t, Void)
   | (t, Begin (expr :: [])) ->
@@ -105,7 +105,7 @@ let rec desugar_typed (expr : TypedStandard.typed_expression) : TypedStandard.ty
     (t, VectorSet (vec', index, value'))
   | (t, Global (str)) -> (t, Global (str))
   | (t, Collect) -> (t, Collect)
-  | (t, Allocate (tt, len)) -> (t, Allocate (tt, len))
+  | (t, Allocate (gs, tt, len)) -> (t, Allocate (gs, tt, len))
   | _ -> expr
 
 (* Remove all macros/sugar from the given program. *)

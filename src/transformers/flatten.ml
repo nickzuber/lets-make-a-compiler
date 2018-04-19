@@ -103,9 +103,9 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
      [assign],
      Variable global_variable)
   | (t, TypedStandard.Void) -> (count, env, [], Int 0)
-  | (t, TypedStandard.Allocate (tt, n)) ->
-    let vector_variable = "allocate" ^ (string_of_int count) in
-    let assign = Assignment (vector_variable, Allocate (tt, n)) in
+  | (t, TypedStandard.Allocate (gs, tt, n)) ->
+    let vector_variable = "allocate_" ^ gs ^ "_" ^ (string_of_int count) in
+    let assign = Assignment (vector_variable, Allocate (gs, tt, n)) in
     hashtbl_add_safe env vector_variable t;
     (count,
      env,

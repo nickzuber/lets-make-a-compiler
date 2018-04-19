@@ -4,6 +4,22 @@ open Polyfill
 
 exception Debugging of string
 
+let print_liveness liveness =
+  Hashtbl.iter (fun arg _ ->
+      match arg with
+      | Select.VARIABLE name -> Printf.printf "=>> %s\n" name
+      | _ -> ()) liveness
+
+let print_liveness_mapping liveness_mapping =
+  Hashtbl.iter (fun instr liveness ->
+      Printf.printf "\n\x1b[90m[%s]\x1b[39m: " (Pprint_ast.string_of_instruction instr);
+      Hashtbl.iter (fun arg _ ->
+          match arg with
+          | Select.VARIABLE name -> Printf.printf "\n %s" name
+          | _ -> ()) liveness;
+      print_endline ""
+    ) liveness_mapping
+
 module Bfs = Interference_graph.Bfs
 
 let naive_interference_ts = ref 0.
@@ -60,6 +76,7 @@ let get_write_args (instr : Select.instruction) : Select.arg list =
   | Select.ADD (src, dest) -> [dest]
   | Select.CMP (src, dest) -> [dest]
   | Select.MOV (src, dest) -> [dest]
+  | Select.LEAQ (src, dest) -> [dest]
   | Select.NEG (arg) -> [arg]
   | _ -> []
 
@@ -70,6 +87,7 @@ let get_read_args (instr : Select.instruction) : Select.arg list =
   | Select.ADD (src, dest) -> [src; dest]
   | Select.CMP (src, dest) -> [src; dest]
   | Select.MOV (src, dest) -> [src]
+  | Select.LEAQ (src, dest) -> [src]
   | Select.NEG (arg) -> [arg]
   | _ -> []
 
@@ -94,9 +112,10 @@ let rec compute_liveness (instr : Select.instruction) (mapping : (Select.instruc
     let (c_mapping, c_previous_liveness) = build_liveness_mapping c_instrs previous_liveness in
     let (a_mapping, a_previous_liveness) = build_liveness_mapping a_instrs previous_liveness in
     let liveness = Set.union c_previous_liveness a_previous_liveness in
-    let mapping' = Immutable_hashtbl.combine c_mapping a_mapping in
-    let mapping'' = Immutable_hashtbl.add mapping' instr liveness in
-    (mapping'', liveness)
+    let new_mapping = Immutable_hashtbl.combine c_mapping a_mapping in
+    let new_mapping_with_original = Immutable_hashtbl.combine new_mapping mapping in
+    let new_mapping_with_original' = Immutable_hashtbl.add new_mapping_with_original instr liveness in
+    (new_mapping_with_original', liveness)
   | _ ->
     let write_variables = get_write_variables instr in
     let read_variables = get_read_variables instr in
@@ -114,6 +133,7 @@ and build_liveness_mapping instructions previous_liveness =
     match instrs with
     | [] -> (mapping, previous_liveness)
     | instr :: rest ->
+      (* Printf.printf "=>> %s\n<<= %d\n\n" (Pprint_ast.string_of_instruction instr) (Immutable_hashtbl.length mapping); *)
       let (mapping', previous_liveness') = compute_liveness instr mapping previous_liveness in
       assign rest mapping' previous_liveness' in
   let (mapping', final_liveness) = assign reversed_instructions mapping previous_liveness in
@@ -183,6 +203,7 @@ let build_liveness_graph (vars : string list) (mapping : Liveness_mapping.t) : I
   let start = Unix.gettimeofday () in
   let vars' = List.map (fun var -> Select.VARIABLE var) vars in
   let (graph, vt) = Interference_graph.init vars' in
+  (* print_liveness_mapping mapping; *)
   Hashtbl.iter (fun instr liveness ->
       match instr with
       | Select.PUSH d -> attempt_to_add_edge liveness [d] d graph vt

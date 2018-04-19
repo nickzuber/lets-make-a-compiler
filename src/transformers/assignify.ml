@@ -21,6 +21,7 @@ let arg_of_select_arg (mapping : (string, Assembly.arg) Hashtbl.t) (arg : Select
   | Select.INT n -> INT n
   | Select.REGISTER r -> REGISTER r
   | Select.GLOBAL s -> GLOBAL s
+  | Select.TAG s -> TAG s
   | Select.REFERENCE (r, offset) -> REFERENCE (r, offset)
   | Select.VARIABLE v -> register_of_variable mapping v
   | Select.BYTE_REGISTER r -> BYTE_REGISTER r
@@ -78,6 +79,10 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     MOVQ (src', dest') |> fix_illegal_instruction_combinations
+  | Select.LEAQ (src, dest) ->
+    let src' = arg_of_select_arg mapping src in
+    let dest' = arg_of_select_arg mapping dest in
+    LEAQ (src', dest') |> fix_illegal_instruction_combinations
   | Select.CALL label ->
     (* NOTE: The amount you push and pop here is relative to the spill size.
      * Push/pop needs to be 16 byte aligned. It's like each push/pop adds 8 bytes.
@@ -175,12 +180,12 @@ let transform ?(quiet=false) (prog : program) : program =
         ; (CALLQ "_initialize")
         ; MOVQ (GLOBAL "rootstack_begin", REGISTER rootstack_ptr_reg)] in
       let instructions = assign mapping instructions 0 in
-      let global_tag = GLOBAL (tag_of_type t) in
+      let type_tag = TAG ("_" ^ (tag_of_type t)) in
       let prepare_return = (match final_instruction with
           | Select.RET arg ->
             let arg' = arg_of_select_arg mapping arg in
             [MOVQ (arg', REGISTER "rax")
-            ; LEAQ (global_tag, REGISTER "rdi")
+            ; LEAQ (type_tag, REGISTER "rdi")
             ; MOVQ (REGISTER "rax", REGISTER "rsi")
             ; CALLQ "_print_result"
             ; MOVQ (INT 0, REGISTER "rax")

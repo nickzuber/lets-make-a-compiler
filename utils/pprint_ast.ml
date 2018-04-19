@@ -133,7 +133,7 @@ and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
         (string_of_typed_expression c ~padding:(padding + padding_offset))
         (string_of_typed_expression a ~padding:(padding + padding_offset))
 
-    | Allocate (tt, len) -> Printf.sprintf "%sAllocate %s (%d) \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type tt) len (string_of_type t)
+    | Allocate (gs, tt, len) -> Printf.sprintf "%sAllocate \"%s\" %s (%d) \x1b[90m: %s\x1b[39m" (build_offset padding) gs (string_of_type tt) len (string_of_type t)
     | Collect -> Printf.sprintf "%sCollect \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | Global s -> Printf.sprintf "%sGlobal %s \x1b[90m: %s\x1b[39m" (build_offset padding) s (string_of_type t)
     | _ -> "some sugar\n")
@@ -213,7 +213,7 @@ and string_of_statement ?(padding=0) node : string = Ast.Flat.(
       Printf.sprintf "%sCollect"
         (build_offset padding)
     | Assignment (name, expr) ->
-      Printf.sprintf "%s%s := %s"
+      Printf.sprintf "%sAssignment => %s, %s"
         (build_offset padding)
         (name)
         (string_of_flat_expression expr)
@@ -249,6 +249,11 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
         (string_of_arg b)
     | MOV (a, b) ->
       Printf.sprintf "%sMOV \t%s, %s"
+        (build_offset padding)
+        (string_of_arg a)
+        (string_of_arg b)
+    | LEAQ (a, b) ->
+      Printf.sprintf "%sLEA \t%s, %s"
         (build_offset padding)
         (string_of_arg a)
         (string_of_arg b)
@@ -420,6 +425,7 @@ and string_of_arg ?(padding=0) arg : string = Ast.Select.(
     | INT n -> Printf.sprintf "%d" n
     | VARIABLE v -> Printf.sprintf "%s" v
     | GLOBAL s -> Printf.sprintf "GLOBAL %s" s
+    | TAG s -> Printf.sprintf "TAG %s" s
     | BYTE_REGISTER r -> Printf.sprintf "%s" r
     | REGISTER r -> Printf.sprintf "%%%s" r
     | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r)
@@ -429,6 +435,7 @@ and string_of_assembly_arg ?(padding=0) arg : string = Ast.Assembly.(
     | INT n -> Printf.sprintf "$%d" n
     | REGISTER r -> Printf.sprintf "%%%s" r
     | GLOBAL s -> Printf.sprintf "_%s(%%rip)" s
+    | TAG s -> Printf.sprintf "%s(%%rip)" s
     | BYTE_REGISTER r -> Printf.sprintf "%%%s" r
     | REFERENCE (r, offset) -> Printf.sprintf "%d(%%%s)" offset r)
 
@@ -450,8 +457,9 @@ and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
         (string_of_argument lhs)
         (string_of_flat_binop op)
         (string_of_argument rhs)
-    | Allocate (t, n) ->
-      Printf.sprintf "Allocate %s (%d)"
+    | Allocate (gs, t, n) ->
+      Printf.sprintf "Allocate \"%s\" %s (%d)"
+        gs
         (string_of_type t)
         (n)
     | VectorRef (arg, i) ->

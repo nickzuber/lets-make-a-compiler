@@ -20,10 +20,10 @@ let rec int_of_typed_expression typed_expr =
                                (Pprint_ast.string_of_typed_expression typed_expr)))
 
 let generic_name_of_type = function
-  | T_VOID -> "ty_void"
-  | T_BOOL -> "ty_bool"
-  | T_INT -> "ty_int"
-  | T_VECTOR _ -> "ty_vector"
+  | T_VOID -> "tag_void"
+  | T_BOOL -> "tag_bool"
+  | T_INT -> "tag_int"
+  | T_VECTOR _ -> "tag_vector"
 
 (* *)
 let rec expose (expr : typed_expression) : typed_expression =

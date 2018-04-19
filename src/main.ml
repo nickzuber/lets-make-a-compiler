@@ -74,14 +74,6 @@ let prog'= Program
        ; Int 3
        ])
 
-let prog = Program
-    (Vector
-       [ Int 111
-       ; False
-       ; Int 222
-       ; True
-       ])
-
 let sp = Program
     (LetExpression
        ("y",
@@ -104,6 +96,15 @@ let prog_macro = Program
            ; Int 4 ]),
         Int 12))
 
+let prog = Program
+    (Vector
+       [ Int 111
+       ; False
+       ; Int 222
+       ; Int 333
+       ; (BinaryExpression (Plus, Int 1, Int 2))
+         (* ; (Vector [ Int 333 ]) *)
+       ])
 
 let prog_tons_of_variables = Program
     (pow2 3)

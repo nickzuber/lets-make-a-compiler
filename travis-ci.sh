@@ -1,6 +1,6 @@
 
 # OPAM packages needed to build tests
-export OPAM_PACKAGES='ocamlfind core batteries ounit emoji'
+export OPAM_PACKAGES='ocamlfind core batteries ounit'
 
 ## basic OCaml and opam installation
 full_apt_version () {

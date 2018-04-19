@@ -143,12 +143,14 @@ esac
 echo OCAML_VERSION=$OCAML_VERSION >  .travis-ocaml.env
 echo OPAM_SWITCH=$OPAM_SWITCH     >> .travis-ocaml.env
 
+`opam config env`
 ocaml -version
 opam --version
 
+`opam config env`
 # install packages from opam
 opam install -q -y ${OPAM_PACKAGES}
-eval $(opam config env)
+`opam config env`
 
 # make and run tests
 make test

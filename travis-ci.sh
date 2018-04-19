@@ -148,6 +148,7 @@ opam --version
 
 # install packages from opam
 opam install -q -y ${OPAM_PACKAGES}
+eval $(opam config env)
 
 # make and run tests
 make test

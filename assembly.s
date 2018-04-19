@@ -1,27 +1,31 @@
 .data
-	tag_vector11:
+	tag_bool25:
+		.quad 1
+		.quad 1
+	tag_vector13:
 		.quad 3
-		.quad 5
-		.quad tag_int17
-		.quad tag_bool18
-		.quad tag_int19
+		.quad 6
 		.quad tag_int20
 		.quad tag_bool21
-	tag_int17:
-		.quad 2
-		.quad 111
+		.quad tag_int22
+		.quad tag_int23
+		.quad tag_void24
+		.quad tag_bool25
+	tag_void24:
+		.quad 0
+		.quad 0
 	tag_bool21:
 		.quad 1
 		.quad 0
-	tag_bool18:
-		.quad 1
-		.quad 0
-	tag_int20:
-		.quad 2
-		.quad 333
-	tag_int19:
+	tag_int22:
 		.quad 2
 		.quad 222
+	tag_int23:
+		.quad 2
+		.quad 333
+	tag_int20:
+		.quad 2
+		.quad 111
 .text
 	.globl _main
 _main:  
@@ -41,19 +45,20 @@ _main:
     movq 	$222, %rcx
     movq 	$333, %rcx
     movq 	$0, %rcx
+    movq 	$1, %rcx
     movq 	_free_ptr(%rip), %rcx
     movq 	%rcx, %r8
-    addq 	$5, %r8
+    addq 	$6, %r8
     movq 	_fromspace_end(%rip), %rcx
     cmpq 	%rcx, %r8
     setg 	%al
     movzbq 	%al, %rcx
     movq 	$1, %rax
     cmpq 	%rcx, %rax
-    je	 	then30
+    je	 	then35
     movq 	$0, %rcx
-    jmp	 	if_end30
-then30:
+    jmp	 	if_end35
+then35:
     movq 	%r15, %rdi
     pushq 	%rcx
     pushq 	%rdx
@@ -67,13 +72,13 @@ then30:
     popq 	%rdx
     popq 	%rcx
     movq 	%rdx, %rcx
-if_end30:
+if_end35:
     movq 	_free_ptr(%rip), %rcx
-    addq 	$56, _free_ptr(%rip)
+    addq 	$64, _free_ptr(%rip)
     movq 	%rcx, %r11
-    leaq 	tag_vector11(%rip), %rcx
+    leaq 	tag_vector13(%rip), %rcx
     movq 	%rcx, 0(%r11)
-    movq 	$5, 8(%r11)
+    movq 	$6, 8(%r11)
     movq 	%rcx, %rax
     leaq 	_ty_vector(%rip), %rdi
     movq 	%rax, %rsi

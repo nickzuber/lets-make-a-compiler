@@ -102,6 +102,7 @@ void print_vector (int64_t* x) {
     tag = x[i + 2];
     if (tag[0] == ty_int) { print_int(tag[1]); }
     else if (tag[0] == ty_bool) { print_bool(tag[1]); }
+    else if (tag[0] == ty_void) { print_void(tag[1]); }
     else { print_vector(tag); }
     if (i + 1 < x[1]) {
       printf(", ");

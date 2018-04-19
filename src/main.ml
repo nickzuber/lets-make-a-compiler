@@ -102,7 +102,8 @@ let prog = Program
        ; False
        ; Int 222
        ; Int 333
-       ; (BinaryExpression (Plus, Int 1, Int 2))
+       ; Void
+       ; True
          (* ; (Vector [ Int 333 ]) *)
        ])
 

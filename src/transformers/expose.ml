@@ -13,6 +13,7 @@ let rec int_of_typed_expression typed_expr =
   match expr with
   | Int n -> n
   | False -> 0
+  | Void -> 0
   | True -> 1
   | LetExpression (_v, binding, _body) ->
     int_of_typed_expression binding

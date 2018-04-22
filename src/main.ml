@@ -104,7 +104,6 @@ let prog = Program
        ; Int 333
        ; Void
        ; True
-         (* ; (Vector [ Int 333 ]) *)
        ])
 
 let prog_tons_of_variables = Program

@@ -73,10 +73,9 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
     let names_of_vec_exprs = List.map (fun typed_expr_with_name ->
         let (maybe_name, t, expr) = typed_expr_with_name in
         let name = match (maybe_name, t) with
-          | (Some name, T_VECTOR _) ->
+          | (Some name, T_VECTOR _) ->  (* Vectors have already had their tags written. *)
             name
-          | (Some name, _) ->
-            (* if not vec *)
+          | (Some name, _) ->  (* If not a vector, then we write the tag manually here. *)
             let items =
               [ string_of_int (int_of_tag t)
               ; string_of_int (int_of_typed_expression (t, expr)) ]

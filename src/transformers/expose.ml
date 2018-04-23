@@ -27,17 +27,18 @@ let generic_name_of_type = function
   | T_VECTOR _ -> "tag_vector"
 
 (* *)
-let rec expose (expr : typed_expression) : typed_expression =
+let rec expose (expr : typed_expression) : string option * typed_expression =
   match expr with
   | (t, Vector exprs) ->
-    let exprs_with_vars = List.fold_left (fun acc expr ->
+    let names_exprs_vars = List.fold_left (fun acc expr ->
         let local_uid = Dangerous_guid.get () in
         let vector_expression_name = Printf.sprintf "ve%d" local_uid in
-        let binding = expose expr in
+        let (name, binding) = expose expr in
         let (binding_t, _) = binding in
         let typed_vector_name_expr = (binding_t, Variable vector_expression_name) in
-        (binding_t, LetExpression (vector_expression_name, binding, typed_vector_name_expr)) :: acc) [] exprs
+        (name, binding_t, LetExpression (vector_expression_name, binding, typed_vector_name_expr)) :: acc) [] exprs
     in
+    let exprs_with_vars = List.map (fun (_n, t, e) -> (t, e)) names_exprs_vars in
     (* Length of vector * 8 + 8 for the size of the tag + 8 for length of items. *)
     let len = List.length exprs_with_vars in
     let size_plus_free_ptr =
@@ -56,7 +57,7 @@ let rec expose (expr : typed_expression) : typed_expression =
     let collect_variable_name = Printf.sprintf "maybe_collect%d" uid in
     let allocate_variable_name = Printf.sprintf "allocate%d" uid in
     let allocate_variable_wrapper_name = Printf.sprintf "_UNUNSED_allocatewrapper%d" uid in
-    let vector_set_expressions = List.mapi (fun i expr ->
+    (* let vector_set_expressions = List.mapi (fun i expr ->
         match expr with
         | (t_let, LetExpression (name, binding, body)) ->
           let local_uid = Dangerous_guid.get () in
@@ -69,24 +70,30 @@ let rec expose (expr : typed_expression) : typed_expression =
                   (t_let, Variable name))),
               (T_VOID, Void)))
         | _ -> raise Not_a_LetExpression) exprs_with_vars
-    in
-    let names_of_vec_exprs = List.map (fun typed_expr ->
-        let (t, expr) = typed_expr in
-        let local_uid = Dangerous_guid.get () in
-        let expr_name = Printf.sprintf "%s%d" (generic_name_of_type t) local_uid in
-        let items =
-          [ string_of_int (int_of_tag t)
-          ; string_of_int (int_of_typed_expression typed_expr) ]
+       in *)
+    let names_of_vec_exprs = List.map (fun typed_expr_with_name ->
+        let (maybe_name, t, expr) = typed_expr_with_name in
+        let name = match (maybe_name, t) with
+          | (Some name, T_VECTOR _) ->
+            name
+          | (Some name, _) ->
+            (* if not vec *)
+            let items =
+              [ string_of_int (int_of_tag t)
+              ; string_of_int (int_of_typed_expression (t, expr)) ]
+            in
+            Hashtbl.add Assembler.vectors name items;
+            name
+          | (None, _) -> raise (Unsupported "when getting vector expression names, an expression didn't have a name. \
+                                             This expression probably isn't supported (not atomic).")
         in
-        Hashtbl.add Assembler.vectors expr_name items;
-        expr_name) exprs_with_vars
+        name) names_exprs_vars
     in
     let vector_name = Printf.sprintf "%s%d" (generic_name_of_type t) uid in
     let items =
       [ string_of_int (int_of_tag t)
       ; string_of_int len ]
-      @
-      names_of_vec_exprs
+      @ names_of_vec_exprs
     in
     Hashtbl.add Assembler.vectors vector_name items;
     let exposed_expr =
@@ -105,9 +112,7 @@ let rec expose (expr : typed_expression) : typed_expression =
                (t, Allocate (vector_name, t, len)),
                (t, Variable allocate_variable_name))
           ]))
-      (* @
-         vector_set_expressions))
-      *)
+      (* @ vector_set_expressions)) *)
       (* set all the elements of allocate to the vector expressions
          We don't need to add this any more because the fields of a vector
          as "set" when we define it up in the `.data` section of the assembly.
@@ -117,47 +122,72 @@ let rec expose (expr : typed_expression) : typed_expression =
     in
     (* The type being returned here is T_VOID *)
     let exposed_expr' = Macros.desugar_typed exposed_expr in
-    (t, LetExpression
-       ((allocate_variable_wrapper_name),
-        (exposed_expr'),
-        (t, Variable allocate_variable_name)))
+    let exposed_typed_expr =
+      (t, LetExpression
+         ((allocate_variable_wrapper_name),
+          (exposed_expr'),
+          (t, Variable allocate_variable_name)))
+    in
+    (Some vector_name, exposed_typed_expr)
   | (t, LetExpression (name, binding, body)) ->
-    let binding' = expose binding in
-    let body' = expose body in
-    (t, LetExpression (name, binding', body'))
+    let (_name, binding') = expose binding in
+    let (_name, body') = expose body in
+    let exposed_typed_expr = (t, LetExpression (name, binding', body')) in
+    (None, exposed_typed_expr)
   | (t, IfExpression (test, consequent, alternate)) ->
-    let test' = expose test in
-    let consequent' = expose consequent in
-    let alternate' = expose alternate in
-    (t, IfExpression (test', consequent', alternate'))
+    let (_name, test') = expose test in
+    let (_name, consequent') = expose consequent in
+    let (_name, alternate') = expose alternate in
+    let exposed_typed_expr = (t, IfExpression (test', consequent', alternate')) in
+    (None, exposed_typed_expr)
   | (t, BinaryExpression (op, lhs, rhs)) ->
-    let lhs' = expose lhs in
-    let rhs' = expose rhs in
-    (t, BinaryExpression (op, lhs', rhs'))
+    let (_name, lhs') = expose lhs in
+    let (_name, rhs') = expose rhs in
+    let exposed_typed_expr = (t, BinaryExpression (op, lhs', rhs')) in
+    (None, exposed_typed_expr)
   | (t, UnaryExpression (op, operand)) ->
-    let operand' = expose operand in
-    (t, UnaryExpression (op, operand'))
+    let (_name, operand') = expose operand in
+    let exposed_typed_expr = (t, UnaryExpression (op, operand')) in
+    (None, exposed_typed_expr)
   | (t, VectorRef (vec, index)) ->
-    let vec' = expose vec in
-    (t, VectorRef (vec', index))
+    let (_name, vec') = expose vec in
+    let exposed_typed_expr = (t, VectorRef (vec', index)) in
+    (None, exposed_typed_expr)
   | (t, VectorSet (vec, index, value)) ->
-    let vec' = expose vec in
-    let value' = expose value in
-    (t, VectorSet (vec', index, value'))
-  | (t, Global (str)) -> (t, Global (str))
-  | (t, Collect) -> (t, Collect)
-  | (t, Allocate (gs, tt, len)) -> (t, Allocate (gs, tt, len))
-  | (t, Read) -> (t, Read)
-  | (t, Variable s) -> (t, Variable s)
-  | (t, Int n) -> (t, Int n)
-  | (t, True) -> (t, True)
-  | (t, False) -> (t, False)
-  | (t, Void) -> (t, Void)
+    let (_name, vec') = expose vec in
+    let (_name, value') = expose value in
+    let exposed_typed_expr = (t, VectorSet (vec', index, value')) in
+    (None, exposed_typed_expr)
+  | (t, Global (str)) -> (None, (t, Global (str)))
+  | (t, Collect) -> (None, (t, Collect))
+  | (t, Allocate (gs, tt, len)) -> (None, (t, Allocate (gs, tt, len)))
+  | (t, Read) -> (None, (t, Read))
+  | (t, Variable s) -> (None, (t, Variable s))
+  | (t, Int n) ->
+    let exposed_typed_expr = (t, Int n) in
+    let local_uid = Dangerous_guid.get () in
+    let expr_name = Printf.sprintf "%s%d" (generic_name_of_type t) local_uid in
+    (Some expr_name, exposed_typed_expr)
+  | (t, True) ->
+    let exposed_typed_expr = (t, True) in
+    let local_uid = Dangerous_guid.get () in
+    let expr_name = Printf.sprintf "%s%d" (generic_name_of_type t) local_uid in
+    (Some expr_name, exposed_typed_expr)
+  | (t, False) ->
+    let exposed_typed_expr = (t, False) in
+    let local_uid = Dangerous_guid.get () in
+    let expr_name = Printf.sprintf "%s%d" (generic_name_of_type t) local_uid in
+    (Some expr_name, exposed_typed_expr)
+  | (t, Void) ->
+    let exposed_typed_expr = (t, Void) in
+    let local_uid = Dangerous_guid.get () in
+    let expr_name = Printf.sprintf "%s%d" (generic_name_of_type t) local_uid in
+    (Some expr_name, exposed_typed_expr)
   | _ -> raise Encountered_a_macro
 
 (* Expose allocations and replace calls to vectors with explicit calls to allocate. *)
 let transform (prog : program) : program =
-  let (t, expr) = match prog with
+  let (_name, (t, expr)) = match prog with
     | ProgramTyped typed_expr -> expose typed_expr
     | _ -> raise (Incorrect_step "expected type ProgramTyped")
   in

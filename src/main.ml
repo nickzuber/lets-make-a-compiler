@@ -98,12 +98,12 @@ let prog_macro = Program
 
 let prog = Program
     (Vector
-       [ Int 111
-       ; False
-       ; Int 222
-       ; Int 333
+       [ Int 1
+       ; (Vector
+            [ Int 2
+            ; False
+            ])
        ; Void
-       ; True
        ])
 
 let prog_tons_of_variables = Program

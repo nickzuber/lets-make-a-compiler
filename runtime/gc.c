@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+static int64_t _DEBUG = 1;
+
 void print_void ();
 void print_int (int64_t x);
 void print_bool (int64_t x);
@@ -17,8 +19,6 @@ int64_t ty_void = 0;
 int64_t ty_bool = 1;
 int64_t ty_int = 2;
 int64_t ty_vector = 3;
-
-static int64_t _DEBUG = 1;
 
 int64_t rootstack_size = 0;
 int64_t heap_size = 0;
@@ -38,7 +38,9 @@ int64_t* rootstack_begin = NULL;
 int64_t* rootstack_end = NULL;
 
 void show_freeptr () {
-  fprintf(stderr, "\x1b[90m[DEBUG]\nfree_ptr = %p\x1b[0m\n", free_ptr);
+  if (_DEBUG) {
+    fprintf(stderr, "\x1b[90m[DEBUG]\nfree_ptr = %p\x1b[0m\n", free_ptr);
+  }
 }
 
 static void initialize_space (const char* label, int64_t** begin, int64_t** end, int64_t size) {

@@ -4,7 +4,6 @@ open Polyfill
 
 exception Illegal_variable_reference of string
 exception Incorrect_step of string
-exception Not_a_LetExpression
 exception Encountered_a_macro
 exception Unsupported of string
 
@@ -69,7 +68,7 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
                   (i),
                   (t_let, Variable name))),
               (T_VOID, Void)))
-        | _ -> raise Not_a_LetExpression) exprs_with_vars
+        | _ -> raise (Unsupported "Not a let expression when evaluating vector set expressions.")) exprs_with_vars
        in *)
     let names_of_vec_exprs = List.map (fun typed_expr_with_name ->
         let (maybe_name, t, expr) = typed_expr_with_name in

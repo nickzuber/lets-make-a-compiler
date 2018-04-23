@@ -103,7 +103,7 @@ let prog = Program
             [ Int 2
             ; False
             ])
-       ; Void
+       ; (BinaryExpression (Plus, Int 1, Int 2))
        ])
 
 let prog_tons_of_variables = Program

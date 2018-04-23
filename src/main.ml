@@ -97,14 +97,13 @@ let prog_macro = Program
         Int 12))
 
 let prog = Program
-    (Vector
-       [ Int 1
-       ; (Vector
-            [ Int 2
-            ; False
-            ])
-       ; (BinaryExpression (Plus, Int 1, Int 2))
-       ])
+    (LetExpression
+       ("x",
+        (Vector
+           [ Int 1
+           ; Void
+           ]),
+        Variable "x"))
 
 let prog_tons_of_variables = Program
     (pow2 3)

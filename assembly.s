@@ -1,25 +1,13 @@
 .data
-	tag_vector13:
+	tag_vector9:
 		.quad 3
 		.quad 2
-		.quad tag_int12
-		.quad tag_bool10
-	tag_int12:
-		.quad 2
-		.quad 2
-	tag_void7:
+		.quad tag_int8
+		.quad tag_void6
+	tag_void6:
 		.quad 0
 		.quad 0
-	tag_vector20:
-		.quad 3
-		.quad 3
-		.quad tag_int19
-		.quad tag_vector13
-		.quad tag_void7
-	tag_bool10:
-		.quad 1
-		.quad 0
-	tag_int19:
+	tag_int8:
 		.quad 2
 		.quad 1
 .text
@@ -37,7 +25,6 @@ _main:
     callq 	_initialize
     movq 	_rootstack_begin(%rip), %r15
     movq 	$1, %rcx
-    movq 	$2, %rcx
     movq 	$0, %rcx
     movq 	_free_ptr(%rip), %rcx
     movq 	%rcx, %r8
@@ -48,10 +35,10 @@ _main:
     movzbq 	%al, %rcx
     movq 	$1, %rax
     cmpq 	%rcx, %rax
-    je	 	then29
+    je	 	then15
     movq 	$0, %rcx
-    jmp	 	if_end29
-then29:
+    jmp	 	if_end15
+then15:
     movq 	%r15, %rdi
     pushq 	%rcx
     pushq 	%rdx
@@ -65,46 +52,13 @@ then29:
     popq 	%rdx
     popq 	%rcx
     movq 	%rdx, %rcx
-if_end29:
+if_end15:
     movq 	_free_ptr(%rip), %rcx
     addq 	$32, _free_ptr(%rip)
     movq 	%rcx, %r11
-    leaq 	tag_vector13(%rip), %rcx
+    leaq 	tag_vector9(%rip), %rcx
     movq 	%rcx, 0(%r11)
     movq 	$2, 8(%r11)
-    movq 	$0, %rcx
-    movq 	_free_ptr(%rip), %rcx
-    addq 	$3, %rcx
-    movq 	_fromspace_end(%rip), %r8
-    cmpq 	%r8, %rcx
-    setg 	%al
-    movzbq 	%al, %rcx
-    movq 	$1, %rax
-    cmpq 	%rcx, %rax
-    je	 	then28
-    movq 	$0, %rcx
-    jmp	 	if_end28
-then28:
-    movq 	%r15, %rdi
-    pushq 	%rcx
-    pushq 	%rdx
-    pushq 	%r8
-    pushq 	%r9
-    pushq 	%r10
-    callq 	_collect
-    popq 	%r10
-    popq 	%r9
-    popq 	%r8
-    popq 	%rdx
-    popq 	%rcx
-    movq 	%rdx, %rcx
-if_end28:
-    movq 	_free_ptr(%rip), %rcx
-    addq 	$40, _free_ptr(%rip)
-    movq 	%rcx, %r11
-    leaq 	tag_vector20(%rip), %rcx
-    movq 	%rcx, 0(%r11)
-    movq 	$3, 8(%r11)
     movq 	%rcx, %rax
     leaq 	_ty_vector(%rip), %rdi
     movq 	%rax, %rsi

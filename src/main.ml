@@ -101,7 +101,10 @@ let prog = Program
        ("x",
         (Vector
            [ Int 1
-           ; Void
+           ; (Vector
+                [ Int 1
+                ; Void
+                ])
            ]),
         Variable "x"))
 

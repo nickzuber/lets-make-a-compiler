@@ -8,10 +8,10 @@ let () =
   let start = Unix.gettimeofday () in
   display "Running tests";
   Test_uniquify.main ();
-  Test_flatten.main ();
-  Test_select.main ();
-  Test_liveness.main ();
-  Test_control.main ();
+  (* Test_flatten.main (); *)
+  (* Test_select.main (); *)
+  (* Test_liveness.main (); *)
+  (* Test_control.main (); *)
   print_endline (create_title "Test summary");
   Printf.printf " •\x1b[32m %d tests passed\x1b[39m" !Runner.pass;
   (* Show unimplemented *)

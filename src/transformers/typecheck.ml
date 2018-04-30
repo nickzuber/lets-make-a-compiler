@@ -130,23 +130,24 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
       | _ ->
         let (t, _) = get_typed_expression vec_expr env in
         raise (Type_error
-                 (Printf.sprintf "Attempted to dereference \x1b[1m%s\x1b[0m instead of a vector."
+                 (Printf.sprintf "Attempted to vector reference \x1b[1m%s\x1b[0m instead of a vector."
                     (Pprint_ast.string_of_type t)))
     in
     let typed_vectorref = get_typed_expression vec_expr env in
     let (vecref_type, _typed_vectorref) = get_typed_expression (List.nth vec index) env in
     (vecref_type, VectorRef (typed_vectorref, index))
-  | Standard.VectorSet (vec, index, value) ->
-    let vec = match expr with
+  | Standard.VectorSet (vec_expr, index, value) ->
+    let _ = match vec_expr with
       | Standard.Vector exprs -> exprs
       | _ ->
-        let (t, _) = get_typed_expression expr env in
+        let (t, _) = get_typed_expression vec_expr env in
         raise (Type_error
-                 (Printf.sprintf "Attempted to dereference \x1b[1m%s\x1b[0m instead of a vector."
-                    (Pprint_ast.string_of_type t))) in
-    let (vec_type, typed_vectorref) = get_typed_expression (List.nth vec index) env in
+                 (Printf.sprintf "Attempted to vector \x1b[1m%s\x1b[0m instead of a vector."
+                    (Pprint_ast.string_of_type t)))
+    in
+    let (tvs_t, typed_vectorset_vec) = get_typed_expression vec_expr env in
     let (value_type, typed_value) = get_typed_expression value env in
-    (T_VOID, VectorSet ((vec_type, typed_vectorref), index, (value_type, typed_value)))
+    (T_VOID, VectorSet ((tvs_t, typed_vectorset_vec), index, (value_type, typed_value)))
   | _ -> (raise Attempted_to_typecheck_macro)
 
 (* *)

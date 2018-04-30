@@ -8,8 +8,10 @@
 static int64_t _DEBUG = 1;
 
 void print_void ();
+void print_int_vector (int64_t* x);
 void print_int (int64_t x);
 void print_bool (int64_t x);
+void print_bool_vector (int64_t* x);
 void print_vector (int64_t* x);
 void print_value(int64_t* tag, int64_t x);
 void print_result(int64_t* tag, int64_t x);
@@ -88,10 +90,24 @@ void print_int (int64_t x) {
   printf("%lld", x);
 }
 
+void print_int_vector (int64_t* x) {
+  printf("%lld", x[1]);
+}
+
 void print_bool (int64_t x) {
   if (x == 1) {
     printf("true");
   } else if (x == 0) {
+    printf("false");
+  } else {
+    printf("BAD BOOL TYPE");
+  }
+}
+
+void print_bool_vector (int64_t* x) {
+  if (x[1] == 1) {
+    printf("true");
+  } else if (x[1] == 0) {
     printf("false");
   } else {
     printf("BAD BOOL TYPE");
@@ -118,6 +134,8 @@ void print_vector (int64_t* x) {
 
 void print_value(int64_t* tag, int64_t x) {
   if (tag[0] == ty_void) { print_void(); }
+  else if (tag[0] == ty_int && x > 10000000) { print_int_vector(x); }
+  else if (tag[0] == ty_bool && x > 10000000) { print_bool_vector(x); }
   else if (tag[0] == ty_int) { print_int(x); }
   else if (tag[0] == ty_bool) { print_bool(x); }
   else if (tag[0] == ty_vector) { printf("("); print_vector(x); }
@@ -127,6 +145,7 @@ void print_value(int64_t* tag, int64_t x) {
 void print_result(int64_t* tag, int64_t x) {
   print_value(tag, x);
   if (tag[0] == ty_void) { printf("\x1b[90m : void\x1b[0m"); }
+  else if (tag[0] == ty_int) { printf("\x1b[90m : int\x1b[0m"); }
   else if (tag[0] == ty_int) { printf("\x1b[90m : int\x1b[0m"); }
   else if (tag[0] == ty_bool) { printf("\x1b[90m : bool \x1b[0m"); }
   else if (tag[0] == ty_vector) { printf(")\x1b[90m : vector\x1b[0m"); }

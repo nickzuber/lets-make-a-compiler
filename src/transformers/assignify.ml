@@ -168,13 +168,13 @@ let transform ?(quiet=false) (prog : program) : program =
       let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
       (* Push stack pointer down far enough to store a variable in each memory location. *)
       let prepare_memory =
-        [ (PUSHQ (REGISTER "rbp"))
-        ; (MOVQ ((REGISTER "rsp"), (REGISTER "rbp")))
+        [ PUSHQ (REGISTER "rbp")
+        ; MOVQ ((REGISTER "rsp"), (REGISTER "rbp"))
         ; PUSHQ (REGISTER "r14")
         ; PUSHQ (REGISTER "r13")
         ; PUSHQ (REGISTER "r12")
         ; PUSHQ (REGISTER "rbx")
-        ; (SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp"))
+        ; SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp")
         ; MOVQ (INT 1024, REGISTER "rdi")
         ; MOVQ (INT 1024, REGISTER "rsi")
         ; (CALLQ "_initialize")

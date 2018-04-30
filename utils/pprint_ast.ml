@@ -56,7 +56,11 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
                (string_of_expression e ~padding:(padding + padding_offset)) ^ acc)
            ""
            exprs)
-    | VectorRef _ -> Printf.sprintf "%sVectorRef TODO" (build_offset padding)
+    | VectorRef (expr, i) ->
+      Printf.sprintf "%sVectorRef (i: %d)\n%s"
+        (build_offset padding)
+        i
+        (string_of_expression expr ~padding:(padding + padding_offset))
     | VectorSet _ -> Printf.sprintf "%sVectorSet TODO" (build_offset padding)
     | Void -> Printf.sprintf "%sVoid" (build_offset padding)
     | Read -> Printf.sprintf "%sRead" (build_offset padding)
@@ -100,7 +104,11 @@ and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
                (string_of_typed_expression e ~padding:(padding + padding_offset)) ^ acc)
            ""
            exprs)
-    | VectorRef _ -> Printf.sprintf "%sVectorRef TODO" (build_offset padding)
+    | VectorRef (expr, i) ->
+      Printf.sprintf "%sVectorRef (i: %d)\n%s"
+        (build_offset padding)
+        i
+        (string_of_typed_expression expr ~padding:(padding + padding_offset))
     | VectorSet _ -> Printf.sprintf "%sVectorSet TODO" (build_offset padding)
     | Void -> Printf.sprintf "%sVoid \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | Read -> Printf.sprintf "%sRead \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)

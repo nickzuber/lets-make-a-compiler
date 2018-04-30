@@ -111,6 +111,11 @@ let prog = Program
            ]),
         Variable "x"))
 
+let prog = Program
+    (VectorRef
+       (Vector ([ Int 123 ])
+       , 0))
+
 let prog_tons_of_variables = Program
     (pow2 3)
 

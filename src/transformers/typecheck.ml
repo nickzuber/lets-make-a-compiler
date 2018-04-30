@@ -124,16 +124,18 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
     let typed_exprs = List.fold_left (fun acc e -> (get_typed_expression e env) :: acc) [] exprs in
     let types = List.map (fun te -> match te with (t, _) -> t) typed_exprs in
     (T_VECTOR types, Vector typed_exprs)
-  | Standard.VectorRef (expr, index) ->
-    let vec = match expr with
+  | Standard.VectorRef (vec_expr, index) ->
+    let vec = match vec_expr with
       | Standard.Vector exprs -> exprs
       | _ ->
-        let (t, _) = get_typed_expression expr env in
+        let (t, _) = get_typed_expression vec_expr env in
         raise (Type_error
                  (Printf.sprintf "Attempted to dereference \x1b[1m%s\x1b[0m instead of a vector."
-                    (Pprint_ast.string_of_type t))) in
-    let (vec_type, typed_vectorref) = get_typed_expression (List.nth vec index) env in
-    (vec_type, VectorRef ((vec_type, typed_vectorref), index))
+                    (Pprint_ast.string_of_type t)))
+    in
+    let typed_vectorref = get_typed_expression vec_expr env in
+    let (vecref_type, _typed_vectorref) = get_typed_expression (List.nth vec index) env in
+    (vecref_type, VectorRef (typed_vectorref, index))
   | Standard.VectorSet (vec, index, value) ->
     let vec = match expr with
       | Standard.Vector exprs -> exprs

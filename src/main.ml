@@ -102,9 +102,12 @@ let prog = Program
         (Vector
            [ Int 1
            ; (Vector
-                [ Int 1
-                ; Void
+                [ (Vector
+                     [ False
+                     ])
+                ; True
                 ])
+           ; Void
            ]),
         Variable "x"))
 

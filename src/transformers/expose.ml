@@ -56,20 +56,6 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
     let collect_variable_name = Printf.sprintf "maybe_collect%d" uid in
     let allocate_variable_name = Printf.sprintf "allocate%d" uid in
     let allocate_variable_wrapper_name = Printf.sprintf "_UNUNSED_allocatewrapper%d" uid in
-    (* let vector_set_expressions = List.mapi (fun i expr ->
-        match expr with
-        | (t_let, LetExpression (name, binding, body)) ->
-          let local_uid = Dangerous_guid.get () in
-          let vector_set_name = Printf.sprintf "_UNUNSED_vs%d" local_uid in
-          (T_VOID, LetExpression
-             ((vector_set_name),
-              (t_let, VectorSet
-                 ((t, Variable allocate_variable_name),
-                  (i),
-                  (t_let, Variable name))),
-              (T_VOID, Void)))
-        | _ -> raise (Unsupported "Not a let expression when evaluating vector set expressions.")) exprs_with_vars
-       in *)
     let names_of_vec_exprs = List.map (fun typed_expr_with_name ->
         let (maybe_name, t, expr) = typed_expr_with_name in
         let name = match (maybe_name, t) with
@@ -110,8 +96,8 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
                (t, Allocate (vector_name, t, len)),
                (t, Variable allocate_variable_name))
           ]))
-      (* @ vector_set_expressions)) *)
-      (* set all the elements of allocate to the vector expressions
+      (* @ vector_set_expressions))
+         set all the elements of allocate to the vector expressions
          We don't need to add this any more because the fields of a vector
          as "set" when we define it up in the `.data` section of the assembly.
          We might defer writing all this `.data` writing till later and use these

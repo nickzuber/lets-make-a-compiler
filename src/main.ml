@@ -113,7 +113,10 @@ let prog = Program
 
 let prog = Program
     (VectorRef
-       (Vector ([ Int 123 ])
+       (Vector (
+           [ Int 123
+           ; True
+           ; Void ])
        , 0))
 
 let prog_tons_of_variables = Program

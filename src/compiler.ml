@@ -65,6 +65,7 @@ let run (assembly : program) : unit =
   let exit_code = Unix.system "./program" in
   let result_message = match exit_code with
     | Unix.WEXITED n when n = 0 -> "Done."
+    | Unix.WEXITED n -> Printf.sprintf "Done with exit code %s." (string_of_int n)
     | _ -> "Failed."
   in Printf.printf "\n%s\n" result_message
 

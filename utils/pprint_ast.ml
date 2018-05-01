@@ -10,7 +10,7 @@ let build_offset padding : string =
 
 let rec string_of_program ?(padding=0) node : string =
   match node with
-  | Program expr ->
+  | Program (defines, expr) ->
     let str = string_of_expression expr ~padding:(padding + padding_offset) in
     Printf.sprintf "%sProgram\n%s" (build_offset padding) str
   | ProgramTyped (t, expr) ->
@@ -73,6 +73,16 @@ and string_of_expression ?(padding=0) node : string = Ast.Standard.(
     | True -> Printf.sprintf "%sTrue" (build_offset padding)
     | False -> Printf.sprintf "%sFalse" (build_offset padding)
     | Variable name -> Printf.sprintf "%sVariable: %s" (build_offset padding) name
+    | INTERNAL_FunctionVariable name -> Printf.sprintf "%sINTERNAL_FunctionVariable: %s" (build_offset padding) name
+    | Apply (lhs, rhs) ->
+      Printf.sprintf "%sApply\n%s\n%s%s"
+        (build_offset padding)
+        (string_of_expression lhs ~padding:(padding + padding_offset))
+        (build_offset (padding + padding_offset))
+        (List.fold_left (fun acc argument ->
+             Printf.sprintf "%s(%s)"
+               (if acc = "" then (acc) else (acc ^ ", "))
+               (string_of_expression argument ~padding:(0))) "" rhs)
     | BinaryExpression (op, lhs, rhs) ->
       Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
         (build_offset padding)
@@ -126,6 +136,16 @@ and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
     | True -> Printf.sprintf "%sTrue \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | False -> Printf.sprintf "%sFalse \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | Variable name -> Printf.sprintf "%sVariable: %s \x1b[90m: %s\x1b[39m" (build_offset padding) name (string_of_type t)
+    | FunctionReference name -> Printf.sprintf "%sFunctionReference: %s \x1b[90m: %s\x1b[39m" (build_offset padding) name (string_of_type t)
+    | Apply (lhs, rhs) ->
+      Printf.sprintf "%sApply\n%s\n%s%s"
+        (build_offset padding)
+        (string_of_typed_expression lhs ~padding:(padding + padding_offset))
+        (build_offset (padding + padding_offset))
+        (List.fold_left (fun acc argument ->
+             Printf.sprintf "%s(%s)"
+               (if acc = "" then (acc) else (acc ^ ", "))
+               (string_of_typed_expression argument ~padding:(0))) "" rhs)
     | BinaryExpression (op, lhs, rhs) ->
       Printf.sprintf "%sBinaryExpression\n%s\n%s\n%s"
         (build_offset padding)
@@ -154,7 +174,9 @@ and string_of_typed_expression ?(padding=0) node : string = Ast.TypedStandard.(
     | Allocate (gs, tt, len) -> Printf.sprintf "%sAllocate \"%s\" %s (%d) \x1b[90m: %s\x1b[39m" (build_offset padding) gs (string_of_type tt) len (string_of_type t)
     | Collect -> Printf.sprintf "%sCollect \x1b[90m: %s\x1b[39m" (build_offset padding) (string_of_type t)
     | Global s -> Printf.sprintf "%sGlobal %s \x1b[90m: %s\x1b[39m" (build_offset padding) s (string_of_type t)
-    | _ -> "some sugar\n")
+    | Unless _
+    | Begin _
+    | When _ -> "some sugar\n")
 
 and string_of_binop ?(padding=0) node : string = Ast.Standard.(
     match node with
@@ -279,6 +301,10 @@ and string_of_instruction ?(padding=0) instruction : string = Ast.Select.(
       Printf.sprintf "%sCALL \t%s"
         (build_offset padding)
         l
+    | INDIRECT_CALL t ->
+      Printf.sprintf "%sINDIRECT_CALL \t%s"
+        (build_offset padding)
+        (string_of_arg t)
     | NEG a ->
       Printf.sprintf "%sNEG \t%s"
         (build_offset padding)
@@ -371,6 +397,10 @@ and string_of_assembly_instruction ?(padding=0) instruction : string = Ast.Assem
       Printf.sprintf "%scallq \t%s"
         (build_offset padding)
         l
+    | INDIRECT_CALL t ->
+      Printf.sprintf "%scallq \t*%s"
+        (build_offset padding)
+        (string_of_assembly_arg t)
     | NEGQ a ->
       Printf.sprintf "%snegq \t%s"
         (build_offset padding)
@@ -460,7 +490,8 @@ and string_of_assembly_arg ?(padding=0) arg : string = Ast.Assembly.(
 and string_of_argument ?(padding=0) node : string = Ast.Flat.(
     match node with
     | Int n -> Printf.sprintf "Int(%d)" n
-    | Variable name -> Printf.sprintf "%s" name)
+    | Variable name -> Printf.sprintf "%s" name
+    | FunctionReference name -> Printf.sprintf "%s\x1b[35;1m(\x1b[0m" name)
 
 and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
     match node with
@@ -470,6 +501,13 @@ and string_of_flat_expression ?(padding=0) node : string = Ast.Flat.(
       Printf.sprintf "%s%s"
         (string_of_flat_unop op)
         (string_of_argument arg)
+    | Apply (caller, arguments) ->
+      Printf.sprintf "%s%s\x1b[35;1m)\x1b[0m"
+        (string_of_argument caller)
+        (List.fold_left (fun acc arg ->
+             Printf.sprintf "%s%s"
+               (if acc = "" then (acc) else (acc ^ ", "))
+               (string_of_argument arg)) "" arguments)
     | BinaryExpression (op, lhs, rhs) ->
       Printf.sprintf "%s %s %s"
         (string_of_argument lhs)
@@ -514,12 +552,20 @@ and string_of_type ?(padding=0) node : string = Ast.(
     match node with
     | T_VOID -> Printf.sprintf "%svoid" (build_offset padding)
     | T_VECTOR ts ->
-      Printf.sprintf "%s(%s)" (build_offset padding)
+      Printf.sprintf "%s(%s)"
+        (build_offset padding)
         (List.fold_right (fun t acc -> match acc with
              | "" -> Printf.sprintf "%s" (string_of_type t)
              | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) ts "")
     | T_INT -> Printf.sprintf "%sint" (build_offset padding)
-    | T_BOOL -> Printf.sprintf "%sbool" (build_offset padding))
+    | T_BOOL -> Printf.sprintf "%sbool" (build_offset padding)
+    | T_FUNCTION (ts, rt) ->
+      Printf.sprintf "%s(%s) -> %s"
+        (build_offset padding)
+        (List.fold_right (fun t acc -> match acc with
+             | "" -> Printf.sprintf "%s" (string_of_type t)
+             | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) ts "")
+        (string_of_type rt))
 
 let display_title (title : string) (prog : program) : program =
   let prog_string = string_of_program prog ~padding:1 in

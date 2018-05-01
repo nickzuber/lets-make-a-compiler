@@ -110,7 +110,8 @@ let rec desugar_typed (expr : TypedStandard.typed_expression) : TypedStandard.ty
 
 (* Remove all macros/sugar from the given program. *)
 let transform (prog : program) : program =
-  let desugared_body = match prog with
-    | Program expr -> desugar expr
-    | _ -> raise (Incorrect_step "expected type Program") in
-  Program desugared_body
+  let (defines, desugared) = match prog with
+    | Program (defines, expr) -> (defines, desugar expr)
+    | _ -> raise (Incorrect_step "expected type Program")
+  in
+  Program (defines, desugared)

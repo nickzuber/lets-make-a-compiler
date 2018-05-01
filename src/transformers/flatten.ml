@@ -91,6 +91,7 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
      [assign],
      Variable var_read)
   | (t, TypedStandard.Variable v) -> (count, env, [], (Variable v))
+  | (t, TypedStandard.FunctionReference n) -> (count, env, [], (FunctionReference n))
   | (t, TypedStandard.Int n) -> (count, env, [], Int n)
   | (t, TypedStandard.True) -> (count, env, [], Int 1)
   | (t, TypedStandard.False) -> (count, env, [], Int 0)
@@ -137,7 +138,27 @@ let rec flatten (expr : TypedStandard.typed_expression) (count : int) (env : (st
      env,
      [Collect],
      Variable collect_variable)
-  | _ -> raise Found_unused_expression_type
+  | (t, TypedStandard.Apply ((caller_t, caller), arguments)) ->
+    let var_apply = "apply_expression_" ^ (string_of_int count) in
+    let (count', vars_caller, statements_caller, argument_caller) = flatten (caller_t, caller) (count + 1) env in
+    let (count'', statements_all_arguments, argument_all_arguments) = List.fold_left (fun acc arg ->
+        let (arg_t, arg) = arg in
+        let (prev_count, prev_statements, prev_arguments) = acc in
+        let (new_count, vars_arg, statements_arg, argument_arg) = flatten (arg_t, arg) (prev_count + 1) env in
+        ( new_count
+        , statements_arg @ prev_statements
+        , [argument_arg] @ prev_arguments )) (count', [], []) arguments
+    in
+    let assign = Assignment (var_apply, Apply (argument_caller, argument_all_arguments)) in
+    hashtbl_add_safe env var_apply T_INT;
+    (count'',
+     env,  (* vars_caller @ vars_rhs @ [var_apply] *)
+     statements_caller @ statements_all_arguments @ [assign],
+     Variable var_apply)
+  | (t, TypedStandard.Unless _)
+  | (t, TypedStandard.Vector _)
+  | (t, TypedStandard.When _)
+  | (t, TypedStandard.Begin _) -> raise Found_unused_expression_type
 
 (* Given a typed program, transform it into a flat program such that all forms of nesting is removed. *)
 let transform (prog : program) : program =

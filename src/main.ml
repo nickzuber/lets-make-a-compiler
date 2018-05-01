@@ -14,18 +14,19 @@ let rec pow2 n =
         (pow2 (n - 1))))
 
 let prog = Program
-    (LetExpression
-       ("y",
-        (LetExpression
-           ("x",
-            (Int 11),
-            (Variable "x"))),
-        (BinaryExpression
-           (Plus,
-            (UnaryExpression
-               (Minus,
-                (Int 1))),
-            (Variable "y")))))
+    ( []
+    , LetExpression
+        ("y",
+         (LetExpression
+            ("x",
+             (Int 11),
+             (Variable "x"))),
+         (BinaryExpression
+            (Plus,
+             (UnaryExpression
+                (Minus,
+                 (Int 1))),
+             (Variable "y")))))
 
 let compare_expr =
   (BinaryExpression
@@ -49,111 +50,146 @@ let if_expr =
       (Int 0)))
 
 let prog2 = Program
-    (IfExpression
-       (True,
-        (IfExpression
-           (False,
-            Int 1,
-            (IfExpression
-               (False,
-                Int 2,
-                Int 3)))),
-        (IfExpression
-           (False,
-            Int 4,
-            Int 5))))
+    ( []
+    , IfExpression
+        (True,
+         (IfExpression
+            (False,
+             Int 1,
+             (IfExpression
+                (False,
+                 Int 2,
+                 Int 3)))),
+         (IfExpression
+            (False,
+             Int 4,
+             Int 5))))
 
 let prog'= Program
-    (Vector
-       [ Int 1
-       ; (LetExpression
-            ("x",
-             (Int 11),
-             (Variable "x")))
-       ; False
-       ; Int 3
-       ])
+    ( []
+    , Vector
+        [ Int 1
+        ; (LetExpression
+             ("x",
+              (Int 11),
+              (Variable "x")))
+        ; False
+        ; Int 3
+        ])
 
 let sp = Program
-    (LetExpression
-       ("y",
-        (Int 1),
-        (LetExpression
-           ("x",
-            (Int 2),
-            (BinaryExpression
-               ((Compare GreaterThan),
-                (Variable "x"),
-                (Variable "y")))))))
+    ( []
+    , LetExpression
+        ("y",
+         (Int 1),
+         (LetExpression
+            ("x",
+             (Int 2),
+             (BinaryExpression
+                ((Compare GreaterThan),
+                 (Variable "x"),
+                 (Variable "y")))))))
 
 let prog_macro = Program
-    (LetExpression
-       ("x",
-        (Begin
-           [ Int 1
-           ; Int 2
-           ; Int 3
-           ; Int 4 ]),
-        Int 12))
+    ( []
+    , LetExpression
+        ("x",
+         (Begin
+            [ Int 1
+            ; Int 2
+            ; Int 3
+            ; Int 4 ]),
+         Int 12))
 
 let prog = Program
-    (LetExpression
-       ("x",
-        (Vector
-           [ Int 1
-           ; (Vector
-                [ (Vector
-                     [ False
-                     ])
-                ; True
-                ])
-           ; Void
-           ]),
-        Variable "x"))
+    ( []
+    , LetExpression
+        ("x",
+         (Vector
+            [ Int 1
+            ; (Vector
+                 [ (Vector
+                      [ False
+                      ])
+                 ; True
+                 ])
+            ; Void
+            ]),
+         Variable "x"))
 
 let prog = Program
-    (VectorRef
-       (Vector (
-           [ Int 123
-           ; True
-           ; Void ])
-       , 0))
+    ( []
+    , VectorRef
+        (Vector (
+            [ Int 123
+            ; True
+            ; Void ])
+        , 0))
 
 let prog = Program
-    (LetExpression
-       ("x"
-       , (Vector (
-             [ Int 321
-             ; False
-             ; Int 123 ]))
-       , (LetExpression
-            ("x"
-            , (Vector (
-                  [ Int 321
-                  ; False
-                  ; Int 123 ]))
-            , (LetExpression
-                 ("x"
-                 , (Vector (
-                       [ Int 321
-                       ; False
-                       ; Int 123 ]))
-                 , (LetExpression
-                      ("x"
-                      , (Vector (
-                            [ Int 321
-                            ; False
-                            ; Int 123 ]))
-                      , (LetExpression
-                           ("x"
-                           , (Vector (
-                                 [ Int 321
-                                 ; False
-                                 ; Int 123 ]))
-                           , Variable "x"))))))))))
+    ( []
+    , LetExpression
+        ("x"
+        , (Vector (
+              [ Int 321
+              ; False
+              ; Int 123 ]))
+        , (LetExpression
+             ("x"
+             , (Vector (
+                   [ Int 321
+                   ; False
+                   ; Int 123 ]))
+             , (LetExpression
+                  ("x"
+                  , (Vector (
+                        [ Int 321
+                        ; False
+                        ; Int 123 ]))
+                  , (LetExpression
+                       ("x"
+                       , (Vector (
+                             [ Int 321
+                             ; False
+                             ; Int 123 ]))
+                       , (LetExpression
+                            ("x"
+                            , (Vector (
+                                  [ Int 321
+                                  ; False
+                                  ; Int 123 ]))
+                            , Variable "x"))))))))))
 
-let prog_tons_of_variables = Program
-    (pow2 3)
+let local_defines =
+  [ ( "add_nums"
+    , [ ("arg1", T_INT)
+      ; ("arg2", T_INT) ]
+    , (BinaryExpression (Plus, Variable "arg1", Variable "arg2"))
+    , T_INT) ]
+
+let prog = Program
+    ( local_defines
+    , (BinaryExpression
+         ( Plus
+         , Variable "add_nums"
+         , Int 1)))
+
+let prog = Program
+    ( local_defines
+    , (Begin
+         [ (Apply
+              ( Variable "add_nums"
+              , [Int 1; Int 2]))
+         ; (Vector (
+               [ Int 321
+               ; False
+               ; Int 123 ])) ]))
+
+let prog = Program
+    ( local_defines
+    , (Apply
+         ( Variable "add_nums"
+         , [Int 1; Int 2])))
 
 let () =
   try

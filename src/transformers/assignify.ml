@@ -3,6 +3,7 @@ open Ast.Assembly
 open Polyfill
 
 exception Incorrect_step of string
+exception Program_error of string
 exception Unexpected_argument
 
 let tag_of_type = function
@@ -10,6 +11,7 @@ let tag_of_type = function
   | T_INT -> "ty_int"
   | T_VOID -> "ty_void"
   | T_VECTOR _ -> "ty_vector"
+  | T_FUNCTION _ -> "ty_function"
 
 (* Given a variable and offset mappings, produce the offset stackpointer register for it. *)
 let register_of_variable (mapping : (string, Assembly.arg) Hashtbl.t) (var : string) : Assembly.arg =
@@ -83,6 +85,21 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
     let src' = arg_of_select_arg mapping src in
     let dest' = arg_of_select_arg mapping dest in
     LEAQ (src', dest') |> fix_illegal_instruction_combinations
+  | Select.INDIRECT_CALL tag ->
+    let tag' = arg_of_select_arg mapping tag in
+    [ PUSHQ (REGISTER "rdi")
+    ; PUSHQ (REGISTER "rsi")
+    ; PUSHQ (REGISTER "rdx")
+    ; PUSHQ (REGISTER "rcx")
+    ; PUSHQ (REGISTER "r8")
+    ; PUSHQ (REGISTER "r9")
+    ; INDIRECT_CALL tag'
+    ; PUSHQ (REGISTER "r9")
+    ; PUSHQ (REGISTER "r8")
+    ; PUSHQ (REGISTER "rcx")
+    ; PUSHQ (REGISTER "rdx")
+    ; PUSHQ (REGISTER "rsi")
+    ; PUSHQ (REGISTER "rdi") ]
   | Select.CALL label ->
     (* NOTE: The amount you push and pop here is relative to the spill size.
      * Push/pop needs to be 16 byte aligned. It's like each push/pop adds 8 bytes.
@@ -93,17 +110,19 @@ let rec assign_single_instruction (mapping : (string, Assembly.arg) Hashtbl.t) (
      * this, since the rsp offset will always align itself to 16 byte assuming the amount of registers we
      * push/pop here is an even number. *)
     (* In reality, you should do a separate pass that injects these push/pops based on the liveness. maybe *)
-    [PUSHQ (REGISTER "rcx");
-     PUSHQ (REGISTER "rdx");
-     PUSHQ (REGISTER "r8");
-     PUSHQ (REGISTER "r9");
-     PUSHQ (REGISTER "r10");
-     CALLQ label;
-     POPQ (REGISTER "r10");
-     POPQ (REGISTER "r9");
-     POPQ (REGISTER "r8");
-     POPQ (REGISTER "rdx");
-     POPQ (REGISTER "rcx");]
+    [ PUSHQ (REGISTER "rdi")
+    ; PUSHQ (REGISTER "rsi")
+    ; PUSHQ (REGISTER "rdx")
+    ; PUSHQ (REGISTER "rcx")
+    ; PUSHQ (REGISTER "r8")
+    ; PUSHQ (REGISTER "r9")
+    ; CALLQ label
+    ; PUSHQ (REGISTER "r9")
+    ; PUSHQ (REGISTER "r8")
+    ; PUSHQ (REGISTER "rcx")
+    ; PUSHQ (REGISTER "rdx")
+    ; PUSHQ (REGISTER "rsi")
+    ; PUSHQ (REGISTER "rdi") ]
   | Select.NEG src ->
     let src' = arg_of_select_arg mapping src in
     [NEGQ src']
@@ -170,12 +189,10 @@ let transform ?(quiet=false) (prog : program) : program =
       let prepare_memory =
         [ PUSHQ (REGISTER "rbp")
         ; MOVQ ((REGISTER "rsp"), (REGISTER "rbp"))
-        ; PUSHQ (REGISTER "rdi")
-        ; PUSHQ (REGISTER "rsi")
-        ; PUSHQ (REGISTER "rdx")
-        ; PUSHQ (REGISTER "rcx")
-        ; PUSHQ (REGISTER "r8")
-        ; PUSHQ (REGISTER "r9")
+        ; PUSHQ (REGISTER "r14")
+        ; PUSHQ (REGISTER "r13")
+        ; PUSHQ (REGISTER "r12")
+        ; PUSHQ (REGISTER "rbx")
         ; SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp")
         ; MOVQ (INT Settings.rootstack_size, REGISTER "rdi")
         ; MOVQ (INT Settings.heap_size, REGISTER "rsi")
@@ -186,18 +203,16 @@ let transform ?(quiet=false) (prog : program) : program =
       let prepare_return = (match final_instruction with
           | Select.RET arg ->
             let arg' = arg_of_select_arg mapping arg in
-            [MOVQ (arg', REGISTER "rax")
+            [ MOVQ (arg', REGISTER "rax")
             ; LEAQ (type_tag, REGISTER "rdi")
             ; MOVQ (REGISTER "rax", REGISTER "rsi")
             ; CALLQ "_print_result"
             ; MOVQ (INT 0, REGISTER "rax")
             ; ADDQ (INT 0, REGISTER "rsp")
-            ; PUSHQ (REGISTER "r9")
-            ; PUSHQ (REGISTER "r8")
-            ; PUSHQ (REGISTER "rcx")
-            ; PUSHQ (REGISTER "rdx")
-            ; PUSHQ (REGISTER "rsi")
-            ; PUSHQ (REGISTER "rdi")
+            ; POPQ (REGISTER "rbx")
+            ; POPQ (REGISTER "r12")
+            ; POPQ (REGISTER "r13")
+            ; POPQ (REGISTER "r14")
             ; LEAVEQ  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * size), REGISTER "rsp")` *)
             ; POPQ (REGISTER "rbp")
             ; RETQ (REGISTER "rax")]

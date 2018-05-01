@@ -5,6 +5,12 @@ exception Type_error of string
 exception Incorrect_step of string
 exception Attempted_to_typecheck_macro
 
+let hashtbl_find_with_error tbl key ?(error="") =
+  try
+    Hashtbl.find tbl key
+  with
+  | Not_found -> raise (Type_error error)
+
 let typed_cmp_of_standard_cmp cmp =
   let open Ast.TypedStandard in
   match cmp with
@@ -18,7 +24,8 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
   match expr with
   | Standard.Variable name ->
     let expr' = Variable name in
-    ((Hashtbl.find env name), expr')
+    let error = Printf.sprintf "Could not find variable definition for \x1b[1m%s\x1b[0m within our environment." name in
+    ((hashtbl_find_with_error env name ~error:error), expr')
   | Standard.LetExpression (name, binding, body) ->
     let (tb, typed_binding) = get_typed_expression binding env in
     Hashtbl.add env name tb;
@@ -148,13 +155,49 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
     let (tvs_t, typed_vectorset_vec) = get_typed_expression vec_expr env in
     let (value_type, typed_value) = get_typed_expression value env in
     (T_VOID, VectorSet ((tvs_t, typed_vectorset_vec), index, (value_type, typed_value)))
-  | _ -> (raise Attempted_to_typecheck_macro)
+  | INTERNAL_FunctionVariable name ->
+    let error = Printf.sprintf "Could not find function definition for \x1b[1m%s\x1b[0m within the list of defines." name in
+    let (_, params_with_types, _, return_type) = hashtbl_find_with_error Assembler.defines name ~error:error in
+    let param_types = List.map (fun (param, param_t) -> param_t) params_with_types in
+    (T_FUNCTION (param_types, return_type), FunctionReference name)
+  | Apply (call_expr, args) ->
+    let name = match call_expr with
+      | INTERNAL_FunctionVariable name -> name
+      | Variable name -> raise (Type_error "Attempted to call a regular variable as a function.")
+      | _ -> raise (Type_error "Attempted to call something that wasn't a function as a function.")
+    in
+    let error = Printf.sprintf "When calling apply, we could not find function definition for \x1b[1m%s\x1b[0m within the list of defines." name in
+    let (_, param_and_type_list, body, return_type) = hashtbl_find_with_error Assembler.defines name ~error:error in
+    (* Create a new env for the function which includes all of the previous scope and its parameters as variables. *)
+    let function_env = Hashtbl.copy env in
+    List.iter (fun (param, param_t) -> Hashtbl.add function_env param param_t) param_and_type_list;
+    let (body_type, typed_body) = get_typed_expression body function_env in
+    let typed_call_expr = get_typed_expression call_expr env in
+    (* Confirm that argument types match parameter signature. *)
+    let typed_args = List.map2 (fun param_with_type arg ->
+        let (param, param_t) = param_with_type in
+        let (arg_t, arg) = get_typed_expression arg env in
+        if arg_t <> param_t then
+          raise (Type_error (Printf.sprintf "The function \x1b[1m%s\x1b[0m was called with an argument of the wrong type.\
+                                             \n    Got \x1b[1m%s\x1b[0m but expected \x1b[1m%s\x1b[0m."
+                               name (Pprint_ast.string_of_type arg_t) (Pprint_ast.string_of_type param_t)))
+        else
+          (arg_t, arg)
+      ) param_and_type_list args in
+    (* Confirm that return type matches body expression. *)
+    if body_type <> return_type then
+      raise (Type_error (Printf.sprintf "The function body of \x1b[1m%s\x1b[0m claimed to have type\x1b[1m%s\x1b[0m but we got \x1b[1m%s\x1b[0m."
+                           name (Pprint_ast.string_of_type body_type) (Pprint_ast.string_of_type return_type)))
+    else
+      (return_type, Apply (typed_call_expr, typed_args))
+  | Begin _
+  | When _ -> (raise Attempted_to_typecheck_macro)
 
 (* *)
 let transform (prog : program) : program =
   (* Env is a mapping from variable name to type. *)
   let env = Hashtbl.create 53 in
   let (expr_type, expr) = match prog with
-    | Program expr -> get_typed_expression expr env
+    | Program (defines, expr) -> get_typed_expression expr env
     | _ -> raise (Incorrect_step "expected type Program") in
   ProgramTyped (expr_type, expr)

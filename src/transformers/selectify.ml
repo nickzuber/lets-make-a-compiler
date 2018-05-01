@@ -3,18 +3,49 @@ open Ast.Select
 open Polyfill
 
 exception Incorrect_step of string
-exception Unhandled_if_test_expression
+exception Program_error of string
 
 let extra_variables : ((string, Ast.t) Hashtbl.t) = Hashtbl.create 53
+
+(* Mapping of int to caller save registers. *)
+let int_to_callersave_register = Hashtbl.create 6
+let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_callersave_register i reg)
+    [ (0, REGISTER "rsi")   (* 2st function argument *)
+    ; (1, REGISTER "rdx")   (* 3st function argument *)
+    ; (2, REGISTER "rcx")   (* 4st function argument *)
+    ; (3, REGISTER "r8")    (* 5th function argument *)
+    ; (4, REGISTER "r9") ]  (* 6st function argument *)
+
+let find_reg_for_arg i =
+  try
+    (* Use a register. Note the ordering is important. *)
+    Hashtbl.find int_to_callersave_register i
+  with
+    Not_found ->
+    (* Use stack. *)
+    raise (Program_error "Too many arguments applied to function.")
 
 let arg_of_flat_argument (arg : Flat.argument) : Select.arg =
   match arg with
   | Flat.Int n -> INT n
   | Flat.Variable v -> VARIABLE v
+  | Flat.FunctionReference n -> TAG n  (* Treat as tag and indirect call later *)
 
 let rec select_single_statement (stmt : Flat.statement) : Select.instruction list = Flat.(
     match stmt with
     | Assignment (var, expr) -> (match expr with
+        | Apply (caller, arguments) ->
+          let var' = VARIABLE var in
+          let caller' = arg_of_flat_argument caller in
+          let args_in_regs_list = List.mapi (fun index arg ->
+              let reg = find_reg_for_arg index in
+              let arg' = arg_of_flat_argument arg in
+              MOV (arg', reg)) arguments in
+          [ LEAQ (caller', var')
+          ; MOV (REGISTER rootstack_ptr_reg, REGISTER "rdi") ]
+          @ args_in_regs_list
+          @ [ INDIRECT_CALL (var')
+            ; MOV (REGISTER "rax", var') ]
         | Allocate (gs, t, n) ->
           (* Length of vector * 8 for items + 8 for the size of the tag + 8 for length of items. *)
           let size_in_bytes = ((n * 8) + 8 + 8) in
@@ -130,7 +161,7 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
           let then_instructions = select consequent_instrs  in
           let else_instructions = select alternate_instrs in
           [IF_STATEMENT (CMP (rhs', lhs'), then_instructions, else_instructions)]
-        | _ -> raise Unhandled_if_test_expression)
+        | _ -> raise (Program_error "Unhandled if expression"))
     | Collect ->
       let rootstack_ptr = REGISTER rootstack_ptr_reg in
       let function_argument_reg = REGISTER "rdi" in

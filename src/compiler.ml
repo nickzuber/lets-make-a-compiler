@@ -16,20 +16,14 @@ let compile (prog : program) : program =
 let compile_and_debug (prog : program) : program =
   Printf.printf "%s" (create_title "Compiling each step in debug mode");
   prog |> Macros.transform
-  |> Uniquify.transform
-  |> display_title "Uniquify"
-  |> Typecheck.transform
-  |> display_title "Typecheck"
-  |> Expose.transform
-  |> display_title "Expose"
-  |> Flatten.transform
-  |> display_title "Flatten"
-  |> Selectify.transform
-  |> display_title "Select"
-  |> Selectify.remove_unused_variables
-  |> display_title "Select (cleaned)"
-  |> Assignify.transform
-  |> display_title "Assign"
+  |> Definify.transform |> display_title "Definify"
+  |> Uniquify.transform |> display_title "Uniquify"
+  |> Typecheck.transform |> display_title "Typecheck"
+  |> Expose.transform |> display_title "Expose"
+  |> Flatten.transform |> display_title "Flatten"
+  |> Selectify.transform |> display_title "Select"
+  |> Selectify.remove_unused_variables |> display_title "Select (cleaned)"
+  |> Assignify.transform |> display_title "Assign"
 
 let build_runtime runtime_filename =
   let build_runtime = Unix.system

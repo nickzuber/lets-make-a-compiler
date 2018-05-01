@@ -32,7 +32,7 @@ module rec Standard : sig
     | Vector of expression list
     | VectorRef of expression * int
     | VectorSet of expression * int * expression
-    | FunctionReference of string
+    | INTERNAL_FunctionVariable of string  (* only used internally (would be new language ideally) *)
     | Apply of expression * expression list  (* function, arguments *)
     (* macros *)
     | Begin of expression list
@@ -68,6 +68,8 @@ module rec TypedStandard : sig
     | Vector of typed_expression list
     | VectorRef of typed_expression * int
     | VectorSet of typed_expression * int * typed_expression
+    | FunctionReference of string
+    | Apply of typed_expression * typed_expression list  (* function, arguments *)
     (* macros *)
     | Begin of typed_expression list
     | When of typed_expression * typed_expression list
@@ -95,6 +97,7 @@ module rec Flat : sig
   type argument =
     | Int of int
     | Variable of string
+    | FunctionReference of string
   type expression =
     | Read
     | Argument of argument
@@ -105,6 +108,7 @@ module rec Flat : sig
     | VectorSet of argument * int * argument
     | Void
     | Global of string
+    | Apply of argument * argument list  (* function, arguments *)
   type statement =
     | Assignment of string * expression
     | IfStatement of expression * statement list * statement list
@@ -132,7 +136,8 @@ module rec Select : sig
     | ADD of arg * arg
     | SUB of arg * arg
     | MOV of arg * arg
-    | CALL of string (* label *)
+    | INDIRECT_CALL of arg  (* tag *)
+    | CALL of string  (* label *)
     | NEG of arg
     | RET of arg
     | PUSH of arg
@@ -140,10 +145,10 @@ module rec Select : sig
     | XOR of arg * arg
     | CMP of arg * arg
     | LEAQ of arg * arg
-    | SET of cc * arg (* cc, byte-register *)
-    | MOVZB of arg * arg (* byte-register, register *)
-    | JUMP of cc * string (* cc, label *)
-    | LABEL of string (* label *)
+    | SET of cc * arg  (* cc, byte-register *)
+    | MOVZB of arg * arg  (* byte-register, register *)
+    | JUMP of cc * string  (* cc, label *)
+    | LABEL of string  (* label *)
 end = Select
 
 module rec Assembly : sig
@@ -165,6 +170,7 @@ module rec Assembly : sig
     | ADDQ of arg * arg
     | SUBQ of arg * arg
     | MOVQ of arg * arg
+    | INDIRECT_CALL of arg  (* tag *)
     | CALLQ of string  (* label *)
     | NEGQ of arg
     | RETQ of arg
@@ -180,12 +186,14 @@ module rec Assembly : sig
     | LEAVEQ
 end = Assembly
 
-type define =
-  | Define of string * (string * t) list * (t * Standard.expression)  (* name, input, return type, body *)
+type define = string                (* name *)
+              * (string * t) list   (* parameters *)
+              * Standard.expression (* body expression *)
+              * t                   (* return type *)
 
 type program =
-  | Program of Standard.expression
-  | ProgramTyped of define list * TypedStandard.typed_expression
+  | Program of define list * Standard.expression
+  | ProgramTyped of TypedStandard.typed_expression
   | FlatProgram of (string, t) Hashtbl.t * Flat.statement list * Flat.argument * t
   | SelectProgram of t * (string, t) Hashtbl.t * Select.instruction list * Select.instruction
   | AssemblyProgram of t * Assembly.instruction list

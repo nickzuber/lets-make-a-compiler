@@ -62,7 +62,10 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
     let vec' = uniquify vec env in
     let value' = uniquify value env in
     VectorSet (vec', index, value')
-  | _ -> raise Encountered_undesugared_macro
+  | Apply (e, args) -> Apply (e, args)  (* note there is no uniquifying here *)
+  | INTERNAL_FunctionVariable name -> INTERNAL_FunctionVariable name
+  | Begin _
+  | When _ -> raise Encountered_undesugared_macro
 
 (* Given a program, removes any instances of shadowing by providing each variable
  * with a unique name. A feature of this transformation is any variables out referenced
@@ -71,7 +74,7 @@ let rec uniquify (expr : expression) (env : (string, int) Hashtbl.t) : expressio
  * the recursive algorithm operates on expressions anyways. *)
 let transform (prog : program) : program =
   let env = Hashtbl.create 53 in
-  let uniquified_body = match prog with
-    | Program expr -> uniquify expr env
+  let (defines, uniquified_expr) = match prog with
+    | Program (defines, expr) -> (defines, uniquify expr env)
     | _ -> raise (Incorrect_step "expected type Program") in
-  Program uniquified_body
+  Program (defines, uniquified_expr)

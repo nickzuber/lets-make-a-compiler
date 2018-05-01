@@ -5,6 +5,7 @@ open Polyfill
 exception Illegal_variable_reference of string
 exception Incorrect_step of string
 exception Encountered_a_macro
+exception Program_error of string
 exception Unsupported of string
 
 let rec int_of_typed_expression typed_expr =
@@ -24,6 +25,7 @@ let generic_name_of_type = function
   | T_BOOL -> "tag_bool"
   | T_INT -> "tag_int"
   | T_VECTOR _ -> "tag_vector"
+  | T_FUNCTION _ -> raise (Program_error "Shouldn't be trying to create a generic name for a function.")
 
 (* *)
 let rec expose (expr : typed_expression) : string option * typed_expression =
@@ -118,6 +120,13 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
     let (_name, body') = expose body in
     let exposed_typed_expr = (t, LetExpression (name, binding', body')) in
     (None, exposed_typed_expr)
+  | (t, Apply (caller, arguments)) ->
+    let (_name, caller') = expose caller in
+    let arguments' = List.fold_left (fun acc arg ->
+        let (_name, arg') = expose arg in
+        arg' :: acc) [] arguments in
+    let exposed_typed_expr = (t, Apply (caller', arguments')) in
+    (None, exposed_typed_expr)
   | (t, IfExpression (test, consequent, alternate)) ->
     let (_name, test') = expose test in
     let (_name, consequent') = expose consequent in
@@ -147,6 +156,7 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
   | (t, Allocate (gs, tt, len)) -> (None, (t, Allocate (gs, tt, len)))
   | (t, Read) -> (None, (t, Read))
   | (t, Variable s) -> (None, (t, Variable s))
+  | (t, FunctionReference s) -> (None, (t, FunctionReference s))
   | (t, Int n) ->
     let exposed_typed_expr = (t, Int n) in
     let local_uid = Dangerous_guid.get () in
@@ -167,7 +177,9 @@ let rec expose (expr : typed_expression) : string option * typed_expression =
     let local_uid = Dangerous_guid.get () in
     let expr_name = Printf.sprintf "%s%d" (generic_name_of_type t) local_uid in
     (Some expr_name, exposed_typed_expr)
-  | _ -> raise Encountered_a_macro
+  | (t, When _)
+  | (t, Unless _)
+  | (t, Begin _) -> raise Encountered_a_macro
 
 (* Expose allocations and replace calls to vectors with explicit calls to allocate. *)
 let transform (prog : program) : program =

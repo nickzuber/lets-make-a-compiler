@@ -122,14 +122,35 @@ let prog = Program
 let prog = Program
     (LetExpression
        ("x"
-       , ((VectorSet
-             (Vector (
-                 [ Int 321
-                 ; False
-                 ; Int 123 ])
-             , 0
-             , Int 1)))
-       , Variable "x"))
+       , (Vector (
+             [ Int 321
+             ; False
+             ; Int 123 ]))
+       , (LetExpression
+            ("x"
+            , (Vector (
+                  [ Int 321
+                  ; False
+                  ; Int 123 ]))
+            , (LetExpression
+                 ("x"
+                 , (Vector (
+                       [ Int 321
+                       ; False
+                       ; Int 123 ]))
+                 , (LetExpression
+                      ("x"
+                      , (Vector (
+                            [ Int 321
+                            ; False
+                            ; Int 123 ]))
+                      , (LetExpression
+                           ("x"
+                           , (Vector (
+                                 [ Int 321
+                                 ; False
+                                 ; Int 123 ]))
+                           , Variable "x"))))))))))
 
 let prog_tons_of_variables = Program
     (pow2 3)

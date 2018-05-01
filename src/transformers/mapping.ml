@@ -46,17 +46,17 @@ let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
 
 (* Caller-save registers should be pushed onto the stack BEFORE a function is called,
  * and restored AFTER it's done. When you do this, you need to make sure the stack is aligned
- * before you make the call instrcution. *)
+ * before you make the call instruction. *)
 let caller_save_registers =
-  [ REGISTER "rax"
-  ; REGISTER "rcx"
-  ; REGISTER "rdx"
-  ; REGISTER "r8"
-  ; REGISTER "r9"
+  [ REGISTER "rdi"  (* 1st function argument *)
+  ; REGISTER "rsi"  (* 2st function argument *)
+  ; REGISTER "rdx"  (* 3st function argument *)
+  ; REGISTER "rcx"  (* 4st function argument *)
+  ; REGISTER "r8"  (* 5th function argument *)
+  ; REGISTER "r9"  (* 6st function argument *)
+  ; REGISTER "rax"
   ; REGISTER "r10"
-  ; REGISTER "r11"
-  ; REGISTER "rsi"
-  ; REGISTER "rdi" ]
+  ; REGISTER "r11" ]
 
 (* Callee-save registers should be pushed onto the stack AFTER a function is called,
  * like when you're inside of the function block, and restored BEFORE it's done. *)

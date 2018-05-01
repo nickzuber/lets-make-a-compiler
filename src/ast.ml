@@ -3,6 +3,7 @@ type t =
   | T_INT
   | T_VOID
   | T_VECTOR of t list
+  | T_FUNCTION of t list * t
 
 module rec Standard : sig
   type cmps =
@@ -31,6 +32,8 @@ module rec Standard : sig
     | Vector of expression list
     | VectorRef of expression * int
     | VectorSet of expression * int * expression
+    | FunctionReference of string
+    | Apply of expression * expression list  (* function, arguments *)
     (* macros *)
     | Begin of expression list
     | When of expression * expression list
@@ -177,9 +180,12 @@ module rec Assembly : sig
     | LEAVEQ
 end = Assembly
 
+type define =
+  | Define of string * (string * t) list * (t * Standard.expression)  (* name, input, return type, body *)
+
 type program =
   | Program of Standard.expression
-  | ProgramTyped of TypedStandard.typed_expression
+  | ProgramTyped of define list * TypedStandard.typed_expression
   | FlatProgram of (string, t) Hashtbl.t * Flat.statement list * Flat.argument * t
   | SelectProgram of t * (string, t) Hashtbl.t * Select.instruction list * Select.instruction
   | AssemblyProgram of t * Assembly.instruction list
@@ -192,3 +198,4 @@ let int_of_tag = function
   | T_BOOL -> 1
   | T_INT -> 2
   | T_VECTOR _ -> 3
+  | T_FUNCTION _ -> 4

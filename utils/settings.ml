@@ -7,6 +7,12 @@ let debug_mode = true
    WARNING: It's super slow for very large programs. Example, it will take ~4 months to compute a `pow2 13` program. *)
 let compute_liveness_matrix = false
 
+(* Size to allocate for heap (in bytes). *)
+let heap_size = 1024
+
+(* Size to allocate for rootstack (in bytes). *)
+let rootstack_size = 1024
+
 (* For the graph output to the terminal, use colors to easily identify variables at a glance. *)
 let use_color_coded_graph = true
 

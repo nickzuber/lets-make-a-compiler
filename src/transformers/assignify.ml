@@ -170,13 +170,15 @@ let transform ?(quiet=false) (prog : program) : program =
       let prepare_memory =
         [ PUSHQ (REGISTER "rbp")
         ; MOVQ ((REGISTER "rsp"), (REGISTER "rbp"))
-        ; PUSHQ (REGISTER "r14")
-        ; PUSHQ (REGISTER "r13")
-        ; PUSHQ (REGISTER "r12")
-        ; PUSHQ (REGISTER "rbx")
+        ; PUSHQ (REGISTER "rdi")
+        ; PUSHQ (REGISTER "rsi")
+        ; PUSHQ (REGISTER "rdx")
+        ; PUSHQ (REGISTER "rcx")
+        ; PUSHQ (REGISTER "r8")
+        ; PUSHQ (REGISTER "r9")
         ; SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp")
-        ; MOVQ (INT 1024, REGISTER "rdi")
-        ; MOVQ (INT 1024, REGISTER "rsi")
+        ; MOVQ (INT Settings.rootstack_size, REGISTER "rdi")
+        ; MOVQ (INT Settings.heap_size, REGISTER "rsi")
         ; (CALLQ "_initialize")
         ; MOVQ (GLOBAL "rootstack_begin", REGISTER rootstack_ptr_reg)] in
       let instructions = assign mapping instructions 0 in
@@ -190,10 +192,12 @@ let transform ?(quiet=false) (prog : program) : program =
             ; CALLQ "_print_result"
             ; MOVQ (INT 0, REGISTER "rax")
             ; ADDQ (INT 0, REGISTER "rsp")
-            ; POPQ (REGISTER "rbx")
-            ; POPQ (REGISTER "r12")
-            ; POPQ (REGISTER "r13")
-            ; POPQ (REGISTER "r14")
+            ; PUSHQ (REGISTER "r9")
+            ; PUSHQ (REGISTER "r8")
+            ; PUSHQ (REGISTER "rcx")
+            ; PUSHQ (REGISTER "rdx")
+            ; PUSHQ (REGISTER "rsi")
+            ; PUSHQ (REGISTER "rdi")
             ; LEAVEQ  (* This fixes the base pointer, replaces something like `ADDQ (INT (8 * size), REGISTER "rsp")` *)
             ; POPQ (REGISTER "rbp")
             ; RETQ (REGISTER "rax")]

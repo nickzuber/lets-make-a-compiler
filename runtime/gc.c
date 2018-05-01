@@ -26,6 +26,7 @@ int64_t ty_void = 0;
 int64_t ty_bool = 1;
 int64_t ty_int = 2;
 int64_t ty_vector = 3;
+int64_t ty_function = 4;
 
 int64_t rootstack_size = 0;
 int64_t heap_size = 0;
@@ -68,7 +69,7 @@ void initialize (int64_t rs, int64_t hs) {
   heap_size = hs;
 
   if (_DEBUG) {
-    fprintf(stderr, "\x1b[90m[DEBUG] initialize\nrs: %llu, hs: %llu\n\n", rs, hs);
+    fprintf(stderr, "\x1b[90m[DEBUG] initialize\nrs: %llu, hs: %llu\x1b[0m\n\n", rs, hs);
   }
 
   initialize_space("fromspace", &fromspace_begin, &fromspace_end, heap_size);
@@ -83,7 +84,7 @@ void scan () {
   int64_t* node = queue_head;
 
   if (_DEBUG) {
-    fprintf(stderr, "\x1b[90m[DEBUG] scan\nqueue_head = %p\n\n", node);
+    fprintf(stderr, "\x1b[90m[DEBUG] scan\nqueue_head = %p\x1b[0m\n\n", node);
   }
 
   int64_t size = 0;
@@ -91,7 +92,7 @@ void scan () {
 
   // Make sure node is a vector.
   if (tag[0] != ty_vector) {
-    fprintf(stderr, "\x1b[31m[ERROR] scan\nnode is not a vector, it was type %d\n\n", tag[0]);
+    fprintf(stderr, "\x1b[31m[ERROR] scan\nnode is not a vector, it was type %d\x1b[0m\n\n", tag[0]);
     exit(1);
   }
 
@@ -100,7 +101,7 @@ void scan () {
     int64_t* e_tag = (int64_t*)tag[2 + i];
     // Skip if its not a vector
     if (e_tag[0] == ty_vector) {
-      queue((int64_t**)(&e));
+      queue((int64_t**)(&node[1 + i]));
     }
   }
 
@@ -111,7 +112,7 @@ void scan () {
 
 void queue (int64_t** node_ref) {
   if (_DEBUG) {
-    fprintf(stderr, "\x1b[90m[DEBUG] queue\nnode_ref = %p\n\n", node_ref);
+    fprintf(stderr, "\x1b[90m[DEBUG] queue\nnode_ref = %p\x1b[0m\n\n", node_ref);
   }
 
   int64_t* node = *node_ref;
@@ -122,12 +123,12 @@ void queue (int64_t** node_ref) {
   if (tospace_begin <= tag && tag < tospace_end) {
     new_tail = tag;
     if (_DEBUG) {
-      fprintf(stderr, "\x1b[90m[DEBUG] queue\nnew_tail = %p\n\n", (int64_t*)*tag);
+      fprintf(stderr, "\x1b[90m[DEBUG] queue\nnew_tail = %p\x1b[0m\n\n", (int64_t*)*tag);
     }
   } else {
     size = tag[1] + 1;
     if (_DEBUG) {
-      fprintf(stderr, "\x1b[90m[DEBUG] queue\nsize = %llu\n\n", size);
+      fprintf(stderr, "\x1b[90m[DEBUG] queue\nsize = %llu\x1b[0m\n\n", size);
     }
   }
 
@@ -139,7 +140,7 @@ void queue (int64_t** node_ref) {
 
 void collect (int64_t* updated_rootstack_ptr) {
   if (_DEBUG) {
-    fprintf(stderr, "\x1b[90m[DEBUG] collect\n\n");
+    fprintf(stderr, "\x1b[90m[DEBUG] collect\x1b[0m\n\n");
   }
 
   rootstack_ptr = updated_rootstack_ptr;

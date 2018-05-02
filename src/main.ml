@@ -13,85 +13,7 @@ let rec pow2 n =
         (pow2 (n - 1)),
         (pow2 (n - 1))))
 
-let prog = Program
-    ( []
-    , LetExpression
-        ("y",
-         (LetExpression
-            ("x",
-             (Int 11),
-             (Variable "x"))),
-         (BinaryExpression
-            (Plus,
-             (UnaryExpression
-                (Minus,
-                 (Int 1))),
-             (Variable "y")))))
-
-let compare_expr =
-  (BinaryExpression
-     ((Compare Equal),
-      (Read),
-      (Int 1)))
-
-let binary_expr =
-  (BinaryExpression
-     (Plus,
-      Int 1,
-      Int 1))
-
-let if_expr =
-  (IfExpression
-     ((BinaryExpression
-         ((Compare LessThan),
-          (Int 9),
-          (Int 10))),
-      (Int 1),
-      (Int 0)))
-
-let prog2 = Program
-    ( []
-    , IfExpression
-        (True,
-         (IfExpression
-            (False,
-             Int 1,
-             (IfExpression
-                (False,
-                 Int 2,
-                 Int 3)))),
-         (IfExpression
-            (False,
-             Int 4,
-             Int 5))))
-
-let prog'= Program
-    ( []
-    , Vector
-        [ Int 1
-        ; (LetExpression
-             ("x",
-              (Int 11),
-              (Variable "x")))
-        ; False
-        ; Int 3
-        ])
-
-let sp = Program
-    ( []
-    , LetExpression
-        ("y",
-         (Int 1),
-         (LetExpression
-            ("x",
-             (Int 2),
-             (BinaryExpression
-                ((Compare GreaterThan),
-                 (Variable "x"),
-                 (Variable "y")))))))
-
-
-let prog = Program
+let prog1 = Program
     ( []
     , (LetExpression
          ("x",
@@ -101,7 +23,7 @@ let prog = Program
             , Variable "x"
             , Int 1 ))))
 
-let prog = Program
+let prog2 = Program
     ( []
     , LetExpression
         ("x",
@@ -109,15 +31,14 @@ let prog = Program
             [ Int 1
             ; (Vector
                  [ (Vector
-                      [ False
-                      ])
+                      [ False ])
                  ; True
                  ])
             ; Void
             ]),
          Variable "x"))
 
-let prog = Program
+let prog3 = Program
     ( []
     , VectorRef
         (Vector (
@@ -126,7 +47,7 @@ let prog = Program
             ; Void ])
         , 0))
 
-let prog = Program
+let prog4 = Program
     ( []
     , LetExpression
         ("x"
@@ -174,20 +95,20 @@ let local_defines =
          , Variable "arg1"
          , Variable "arg2"))
     , T_INT)
-  ; ( "illegal_max"
+  ; ( "incorrectly_defined_max"
     , [ ("arg1", T_INT)
       ; ("arg2", T_INT) ]
     , (BinaryExpression (Compare GreaterThan, Variable "arg1", Variable "arg2"))
     , T_INT) ]
 
-let prog = Program
+let prog5 = Program
     ( local_defines
     , (BinaryExpression
          ( Plus
          , Variable "add_nums"
          , Int 1)))
 
-let prog = Program
+let prog6 = Program
     ( local_defines
     , (Begin
          [ (Apply
@@ -198,13 +119,13 @@ let prog = Program
                ; False
                ; Int 123 ])) ]))
 
-let prog = Program
+let prog7 = Program
     ( local_defines
     , (Apply
          ( Variable "add_nums"
          , [Int 2; Int 5])))
 
-let prog = Program
+let prog8 = Program
     ( local_defines
     , (LetExpression
          ( "x"
@@ -213,7 +134,7 @@ let prog = Program
               , [Int 2; Int 5]))
          , (Variable "x"))))
 
-let prog = Program
+let prog9 = Program
     ( local_defines
     , (LetExpression
          ( "x"
@@ -225,7 +146,7 @@ let prog = Program
               , Variable "x"
               , Int 1)))))
 
-let prog = Program
+let prog10 = Program
     ( local_defines
     , (Begin
          [ (Apply
@@ -239,21 +160,33 @@ let prog = Program
                ; False
                ; Int 123 ])) ]))
 
-let prog = Program
+let prog11 = Program
     ( local_defines
     , Apply
-        ( Variable "illegal_max"
+        ( Variable "incorrectly_defined_max"
         , [Int 1; Int 2]))
 
-let prog = Program
+let prog12 = Program
     ( local_defines
     , Apply
         ( Variable "max"
-        , [Int 1; Int 2]))
+        , [Int 10; Int 5]))
 
 let () =
   try
-    let prog' = prog in
+    let _ = prog1 in      (* old stuff still works fine *)
+    let _ = prog2 in      (* first class nested vector *)
+    let _ = prog3 in      (* vector reference *)
+    let _ = prog4 in      (* lots of vectors w/ gc example *)
+    let _ = prog5 in      (* [RAISE] illegal function argument *)
+    let _ = prog6 in      (* function and vectors together *)
+    let _ = prog7 in      (* function application *)
+    let _ = prog8 in      (* function application in let expression *)
+    let _ = prog9 in      (* function application in variable and binexp *)
+    let _ = prog10 in     (* multiple functions with vectors *)
+    let _ = prog11 in     (* [RAISE] illegal fuction definition *)
+    let _ = prog12 in     (*  *)
+    let prog' = prog12 in
     if Settings.debug_mode then begin
       display "Current program representation";
       prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.compile_functions |> Compiler.run;

@@ -48,8 +48,8 @@ _main:
     movq 	_rootstack_begin(%rip), %r15
     leaq 	max(%rip), %r8
     movq 	%r15, %rdi
-    movq 	$12, %rsi
-    movq 	$2, %rdx
+    movq 	$10, %rsi
+    movq 	$15, %rdx
     pushq 	%rdi
     pushq 	%rsi
     pushq 	%rdx

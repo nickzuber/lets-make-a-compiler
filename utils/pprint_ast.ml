@@ -564,7 +564,7 @@ and string_of_type ?(padding=0) node : string = Ast.(
         (build_offset padding)
         (List.fold_right (fun t acc -> match acc with
              | "" -> Printf.sprintf "%s" (string_of_type t)
-             | _ -> Printf.sprintf "%s * %s" acc (string_of_type t)) ts "")
+             | _ -> Printf.sprintf "%s -> %s" acc (string_of_type t)) ts "")
         (string_of_type rt))
 
 let display_title (title : string) (prog : program) : program =

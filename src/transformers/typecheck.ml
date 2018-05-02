@@ -141,9 +141,11 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
                  (Printf.sprintf "Attempted to vector reference \x1b[1m%s\x1b[0m instead of a vector."
                     (Pprint_ast.string_of_type t)))
     in
+    let len = List.length vec in
+    let adjusted_index = (len - 1) - index in
     let typed_vectorref = get_typed_expression vec_expr env in
-    let (vecref_type, _typed_vectorref) = get_typed_expression (List.nth vec index) env in
-    (vecref_type, VectorRef (typed_vectorref, index))
+    let (vecref_type, _typed_vectorref) = get_typed_expression (List.nth vec adjusted_index) env in
+    (vecref_type, VectorRef (typed_vectorref, adjusted_index))
   | Standard.VectorSet (vec_expr, index, value) ->
     let _ = match vec_expr with
       | Standard.Vector exprs -> exprs

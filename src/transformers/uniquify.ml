@@ -2,6 +2,7 @@ open Ast
 open Ast.Standard
 
 exception Illegal_variable_reference of string
+exception Program_error of string
 exception Incorrect_step of string
 exception Encountered_undesugared_macro
 
@@ -78,3 +79,18 @@ let transform (prog : program) : program =
     | Program (defines, expr) -> (defines, uniquify expr env)
     | _ -> raise (Incorrect_step "expected type Program") in
   Program (defines, uniquified_expr)
+
+let transform_function ~function_name (prog : program) : program =
+  let env = Hashtbl.create 53 in
+  (* Since this program is in the scope of a function, we add parameters as variables. *)
+  let definition = Hashtbl.find Assembler.defines function_name in
+  let (_, params_with_types, _, _) = definition in
+  List.iter (fun (param, t) -> Hashtbl.add env param 1) params_with_types;
+  let (defines, uniquified_expr) = match prog with
+    | Program (defines, expr) -> (defines, uniquify expr env)
+    | _ -> raise (Incorrect_step "expected type Program") in
+  Program (defines, uniquified_expr)
+
+let safe_transform prog =
+  try transform prog
+  with _ -> raise (Program_error "Error occured Uniquify")

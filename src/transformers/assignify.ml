@@ -6,6 +6,24 @@ exception Incorrect_step of string
 exception Program_error of string
 exception Unexpected_argument
 
+(* Mapping of int to caller save registers. *)
+let int_to_callersave_register = Hashtbl.create 6
+let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_callersave_register i reg)
+    [ (0, REGISTER "rsi")   (* 2st function argument *)
+    ; (1, REGISTER "rdx")   (* 3st function argument *)
+    ; (2, REGISTER "rcx")   (* 4st function argument *)
+    ; (3, REGISTER "r8")    (* 5th function argument *)
+    ; (4, REGISTER "r9") ]  (* 6st function argument *)
+
+let find_reg_for_arg i =
+  try
+    (* Use a register. Note the ordering is important. *)
+    Hashtbl.find int_to_callersave_register i
+  with
+    Not_found ->
+    (* Use stack. *)
+    raise (Program_error "Too many arguments applied to function.")
+
 let tag_of_type = function
   | T_BOOL -> "ty_bool"
   | T_INT -> "ty_int"
@@ -176,6 +194,56 @@ and assign (mapping : (string, Assembly.arg) Hashtbl.t) (instructions : Select.i
   | instruction :: [] -> assign_single_instruction mapping instruction count
   | instruction :: rest -> (assign_single_instruction mapping instruction count) @ (assign mapping rest count)
 
+(* Same as transform but without calls to initialize. Has the context of functions and closures. *)
+let transform_function ?(quiet=false) ~function_name (prog : program) : program =
+  let (t, instructions) = match prog with
+    | SelectProgram (t, vars, instructions, final_instruction) ->
+      (* At the point of a `call`, the %rsp base pointer register must be divisibly by 16.
+         https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
+      let mapping, spilled_variable_size = Mapping.create vars instructions ~quiet:quiet in
+      let (_, params_with_types, _, _) = Hashtbl.find Assembler.defines function_name in
+      let function_argument_assignments = List.mapi (fun i (name, _) ->
+          let register_with_value = find_reg_for_arg i in
+          let register_being_used = Hashtbl.find mapping (name ^ "_1") in
+          MOVQ (register_with_value, register_being_used)) params_with_types
+      in
+      let _ = List.mapi (fun i (name, _) ->
+          let register_with_value = find_reg_for_arg i in
+          Hashtbl.add mapping (name ^ "_1") register_with_value) params_with_types
+      in
+      let align_base_pointer_offset = if spilled_variable_size mod 2 = 0 then 0 else 1 in
+      (* Push stack pointer down far enough to store a variable in each memory location. *)
+      let prepare_memory =
+        [ PUSHQ (REGISTER "rbp")
+        ; MOVQ ((REGISTER "rsp"), (REGISTER "rbp"))
+        ; PUSHQ (REGISTER "r15")
+        ; PUSHQ (REGISTER "r14")
+        ; PUSHQ (REGISTER "r13")
+        ; PUSHQ (REGISTER "r12")
+        ; PUSHQ (REGISTER "rbx")
+        ; SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp") ] in
+      let instructions = assign mapping instructions 0 in
+      let prepare_return = (match final_instruction with
+          | Select.RET arg ->
+            let arg' = arg_of_select_arg mapping arg in
+            [ MOVQ (arg', REGISTER "rax")
+            ; ADDQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp")
+            ; POPQ (REGISTER "rbx")
+            ; POPQ (REGISTER "r12")
+            ; POPQ (REGISTER "r13")
+            ; POPQ (REGISTER "r14")
+            ; POPQ (REGISTER "r15")
+            ; POPQ (REGISTER "rbp")
+            ; RETQ (REGISTER "rax")]
+          | _ -> raise (Unexpected_argument)) in
+      ( t
+      , prepare_memory
+        (* @ function_argument_assignments *)
+        @ instructions
+        @ prepare_return)
+    | _ -> raise (Incorrect_step "expected type SelectProgram") in
+  AssemblyProgram (t, instructions)
+
 (* NOTE: `retq` should always return $rax, otherwise you have an error. *)
 (* Given a program of variables and assembly instructions, produce a valid assembly program. *)
 let transform ?(quiet=false) (prog : program) : program =
@@ -196,7 +264,7 @@ let transform ?(quiet=false) (prog : program) : program =
         ; SUBQ (INT (8 * (spilled_variable_size + align_base_pointer_offset)), REGISTER "rsp")
         ; MOVQ (INT Settings.rootstack_size, REGISTER "rdi")
         ; MOVQ (INT Settings.heap_size, REGISTER "rsi")
-        ; (CALLQ "_initialize")
+        ; CALLQ ("_initialize")
         ; MOVQ (GLOBAL "rootstack_begin", REGISTER rootstack_ptr_reg)] in
       let instructions = assign mapping instructions 0 in
       let type_tag = TAG ("_" ^ (tag_of_type t)) in

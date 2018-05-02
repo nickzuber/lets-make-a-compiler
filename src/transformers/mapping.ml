@@ -38,11 +38,11 @@ end = Liveness
 (* Mapping of int to general purpose registers. *)
 let int_to_valid_register = Hashtbl.create 8
 let _ = List.iter (fun (i, reg) -> Hashtbl.add int_to_valid_register i reg)
-    [ (0, REGISTER "rcx")
-    ; (1, REGISTER "rdx")
-    ; (2, REGISTER "r8")
-    ; (3, REGISTER "r9")
-    ; (4, REGISTER "r10") ]
+    [ (0, REGISTER "r8")
+    ; (1, REGISTER "r9")
+    ; (2, REGISTER "r10")
+    ; (3, REGISTER "rdx")
+    ; (4, REGISTER "rcx") ]
 
 (* Caller-save registers should be pushed onto the stack BEFORE a function is called,
  * and restored AFTER it's done. When you do this, you need to make sure the stack is aligned
@@ -52,8 +52,8 @@ let caller_save_registers =
   ; REGISTER "rsi"  (* 2st function argument *)
   ; REGISTER "rdx"  (* 3st function argument *)
   ; REGISTER "rcx"  (* 4st function argument *)
-  ; REGISTER "r8"  (* 5th function argument *)
-  ; REGISTER "r9"  (* 6st function argument *)
+  ; REGISTER "r8"   (* 5th function argument *)
+  ; REGISTER "r9"   (* 6st function argument *)
   ; REGISTER "rax"
   ; REGISTER "r10"
   ; REGISTER "r11" ]

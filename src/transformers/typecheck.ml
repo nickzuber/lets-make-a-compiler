@@ -2,6 +2,7 @@ open Ast
 open Ast.Standard
 
 exception Type_error of string
+exception Program_error of string
 exception Incorrect_step of string
 exception Attempted_to_typecheck_macro
 
@@ -197,7 +198,17 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
 let transform (prog : program) : program =
   (* Env is a mapping from variable name to type. *)
   let env = Hashtbl.create 53 in
+  (* Since this program is in the scope of a function, we add parameters as variables. *)
+  Hashtbl.iter (fun _ definition ->
+      let (_, params_with_types, _, _) = definition in
+      List.iter (fun (param, t) ->
+          let uniquified_name = param ^ "_1" in
+          Hashtbl.add env uniquified_name t) params_with_types) Assembler.defines;
   let (expr_type, expr) = match prog with
     | Program (defines, expr) -> get_typed_expression expr env
     | _ -> raise (Incorrect_step "expected type Program") in
   ProgramTyped (expr_type, expr)
+
+let safe_transform prog =
+  try transform prog
+  with _ -> raise (Program_error "Error occured Typecheck")

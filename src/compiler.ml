@@ -67,3 +67,32 @@ let run (assembly : program) : unit =
 let compile_and_run (prog : program) : unit =
   let assembly = compile prog in
   run assembly
+
+let create_define_assembly (name : string) (definition : define) =
+  let (name, params_with_types, body_expr, return_type) = definition in
+  let body_expr_as_program = Program ([], body_expr) in
+  let body_assembly_program = body_expr_as_program
+                              |> Macros.transform |> display_title "Macros"
+                              |> Uniquify.transform_function ~function_name:name |> display_title "Uniquify"
+                              |> Typecheck.transform |> display_title "Typecheck"
+                              |> Expose.transform |> display_title "Expose"
+                              |> Flatten.transform_function ~function_name:name |> display_title "Flatten"
+                              |> Selectify.transform |> display_title "Selectify"
+                              |> Selectify.remove_unused_variables |> display_title "Selectify (cleaned)"
+                              |> Assignify.transform_function ~function_name:name ~quiet:true |> display_title "Assignify"
+  in
+  let body_instructions = match body_assembly_program with
+    | AssemblyProgram (t, instrs) -> instrs
+    | _ -> raise (Not_found)
+  in
+  Printf.sprintf "\t.globl %s\n\t%s:%s\n"
+    name
+    name
+    (Pprint_ast.string_of_assembly_instructions body_instructions ~padding:(6))
+
+(* Pass the program right through without touching it, but generate the function definitions in the
+ * assembly before you do this. *)
+let compile_functions prog =
+  let defines_strings = Hashtbl.fold (fun k v acc -> acc ^ (create_define_assembly k v)) Assembler.defines "" in
+  Hashtbl.add Assembler.function_definitions "functions" defines_strings;
+  prog

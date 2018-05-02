@@ -90,16 +90,16 @@ let sp = Program
                  (Variable "x"),
                  (Variable "y")))))))
 
-let prog_macro = Program
+
+let prog = Program
     ( []
-    , LetExpression
-        ("x",
-         (Begin
-            [ Int 1
-            ; Int 2
-            ; Int 3
-            ; Int 4 ]),
-         Int 12))
+    , (LetExpression
+         ("x",
+          Int 1,
+          BinaryExpression
+            ( Plus
+            , Variable "x"
+            , Int 1 ))))
 
 let prog = Program
     ( []
@@ -189,15 +189,36 @@ let prog = Program
     ( local_defines
     , (Apply
          ( Variable "add_nums"
-         , [Int 1; Int 2])))
+         , [Int 2; Int 5])))
+
+let prog = Program
+    ( local_defines
+    , (LetExpression
+         ( "x"
+         , (Apply
+              ( Variable "add_nums"
+              , [Int 2; Int 5]))
+         , (Variable "x"))))
+
+let prog = Program
+    ( local_defines
+    , (LetExpression
+         ( "x"
+         , (Apply
+              ( Variable "add_nums"
+              , [Int 2; Int 5]))
+         , (BinaryExpression
+              ( Plus
+              , Variable "x"
+              , Int 1)))))
 
 let () =
   try
     let prog' = prog in
-    if Settings.debug_mode then
-      (display "Current program representation";
-       prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.run)
-    else
+    if Settings.debug_mode then begin
+      display "Current program representation";
+      prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.compile_functions |> Compiler.run;
+    end else
       Compiler.compile_and_run prog'
   with
   | Illegal_variable_reference name ->

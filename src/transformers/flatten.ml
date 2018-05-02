@@ -168,3 +168,19 @@ let transform (prog : program) : program =
     | ProgramTyped (t, expr) -> ((flatten (t, expr) count env), t)
     | _ -> raise (Incorrect_step "expected type ProgramTyped") in
   FlatProgram (vars, statements, argument, argument_type)
+
+let transform_function ~function_name (prog : program) : program =
+  let count = 0 in
+  let env = Hashtbl.create 53 in
+  (* Since this program is in the scope of a function, we add parameters as variables.
+   * These variables are never "defined" in the program, but rather by the arguments passed in,
+   * so they won't organically appear in the variable graph after a flatten pass. Add them manually here. *)
+  let definition = Hashtbl.find Assembler.defines function_name in
+  let (_, params_with_types, _, _) = definition in
+  List.iter (fun (param, t) ->
+      let uniquified_name = param ^ "_1" in
+      Hashtbl.add env uniquified_name t) params_with_types;
+  let ((_, vars, statements, argument), argument_type) = match prog with
+    | ProgramTyped (t, expr) -> ((flatten (t, expr) count env), t)
+    | _ -> raise (Incorrect_step "expected type ProgramTyped") in
+  FlatProgram (vars, statements, argument, argument_type)

@@ -187,7 +187,7 @@ module rec Assembly : sig
 end = Assembly
 
 type define = string                (* name *)
-              * (string * t) list   (* parameters *)
+              * (string * t) list   (* parameters, types *)
               * Standard.expression (* body expression *)
               * t                   (* return type *)
 

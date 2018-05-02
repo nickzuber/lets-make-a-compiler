@@ -168,9 +168,14 @@ let prog11 = Program
 
 let prog12 = Program
     ( local_defines
-    , Apply
-        ( Variable "max"
-        , [Int 10; Int 5]))
+    , LetExpression
+        ( "x"
+        , (Apply
+             ( Variable "add_nums"
+             , [Int 1; Int 2]))
+        , Apply
+            ( Variable "max"
+            , [Variable "x"; Int 5])))
 
 let () =
   try
@@ -185,8 +190,8 @@ let () =
     let _ = prog9 in      (* function application in variable and binexp *)
     let _ = prog10 in     (* multiple functions with vectors *)
     let _ = prog11 in     (* [RAISE] illegal fuction definition *)
-    let _ = prog12 in     (*  *)
-    let prog' = prog12 in
+    let _ = prog12 in     (* function that returns its argument *)
+    let prog' = prog1 in
     if Settings.debug_mode then begin
       display "Current program representation";
       prog' |> display_title "Input" |> Compiler.compile_and_debug |> Compiler.compile_functions |> Compiler.run;

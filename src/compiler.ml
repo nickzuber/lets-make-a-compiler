@@ -4,6 +4,7 @@ open Pprint_ast
 (* The core compiling routine *)
 let compile (prog : program) : program =
   prog |> Macros.transform
+  |> Definify.transform
   |> Uniquify.transform
   |> Typecheck.transform
   |> Expose.transform

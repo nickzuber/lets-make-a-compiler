@@ -90,7 +90,3 @@ let transform_function ~function_name (prog : program) : program =
     | Program (defines, expr) -> (defines, uniquify expr env)
     | _ -> raise (Incorrect_step "expected type Program") in
   Program (defines, uniquified_expr)
-
-let safe_transform prog =
-  try transform prog
-  with _ -> raise (Program_error "Error occured Uniquify")

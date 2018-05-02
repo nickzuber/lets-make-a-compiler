@@ -202,7 +202,7 @@ let transform_function ?(quiet=false) ~function_name (prog : program) : program 
          https://stackoverflow.com/questions/43354658/os-x-x64-stack-not-16-byte-aligned-error#comment73772561_43354658 *)
       let mapping, spilled_variable_size = Mapping.create vars instructions ~quiet:quiet in
       let (_, params_with_types, _, _) = Hashtbl.find Assembler.defines function_name in
-      let function_argument_assignments = List.mapi (fun i (name, _) ->
+      let _function_argument_assignments = List.mapi (fun i (name, _) ->
           let register_with_value = find_reg_for_arg i in
           let register_being_used = Hashtbl.find mapping (name ^ "_1") in
           MOVQ (register_with_value, register_being_used)) params_with_types

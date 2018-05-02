@@ -210,7 +210,3 @@ let transform (prog : program) : program =
     | Program (defines, expr) -> get_typed_expression expr env
     | _ -> raise (Incorrect_step "expected type Program") in
   ProgramTyped (expr_type, expr)
-
-let safe_transform prog =
-  try transform prog
-  with _ -> raise (Program_error "Error occured Typecheck")

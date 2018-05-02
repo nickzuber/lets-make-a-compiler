@@ -15,8 +15,7 @@ let rec int_of_typed_expression typed_expr =
   | False -> 0
   | Void -> 0
   | True -> 1
-  | LetExpression (_v, binding, _body) ->
-    int_of_typed_expression binding
+  | LetExpression (_v, binding, _body) -> int_of_typed_expression binding
   | _ -> raise (Unsupported (Printf.sprintf "we don't support %s as a argument for a vector yet"
                                (Pprint_ast.string_of_typed_expression typed_expr)))
 

@@ -187,7 +187,7 @@ let rec get_typed_expression (expr : expression) (env : (string, Ast.t) Hashtbl.
       ) param_and_type_list args in
     (* Confirm that return type matches body expression. *)
     if body_type <> return_type then
-      raise (Type_error (Printf.sprintf "The function body of \x1b[1m%s\x1b[0m claimed to have type\x1b[1m%s\x1b[0m but we got \x1b[1m%s\x1b[0m."
+      raise (Type_error (Printf.sprintf "The function body of \x1b[1m%s\x1b[0m claimed to have type \x1b[1m%s\x1b[0m but we got \x1b[1m%s\x1b[0m."
                            name (Pprint_ast.string_of_type body_type) (Pprint_ast.string_of_type return_type)))
     else
       (return_type, Apply (typed_call_expr, typed_args))

@@ -165,6 +165,19 @@ let local_defines =
     , [ ("arg1", T_INT)
       ; ("arg2", T_INT) ]
     , (BinaryExpression (Plus, Variable "arg1", Variable "arg2"))
+    , T_INT)
+  ; ( "max"
+    , [ ("arg1", T_INT)
+      ; ("arg2", T_INT) ]
+    , (IfExpression
+         ( (BinaryExpression (Compare GreaterThan, Variable "arg1", Variable "arg2"))
+         , Variable "arg1"
+         , Variable "arg2"))
+    , T_INT)
+  ; ( "illegal_max"
+    , [ ("arg1", T_INT)
+      ; ("arg2", T_INT) ]
+    , (BinaryExpression (Compare GreaterThan, Variable "arg1", Variable "arg2"))
     , T_INT) ]
 
 let prog = Program
@@ -211,6 +224,32 @@ let prog = Program
               ( Plus
               , Variable "x"
               , Int 1)))))
+
+let prog = Program
+    ( local_defines
+    , (Begin
+         [ (Apply
+              ( Variable "add_nums"
+              , [Int 1; Int 2]))
+         ; (Apply
+              ( Variable "max"
+              , [Int 1; Int 2]))
+         ; (Vector (
+               [ Int 321
+               ; False
+               ; Int 123 ])) ]))
+
+let prog = Program
+    ( local_defines
+    , Apply
+        ( Variable "illegal_max"
+        , [Int 1; Int 2]))
+
+let prog = Program
+    ( local_defines
+    , Apply
+        ( Variable "max"
+        , [Int 1; Int 2]))
 
 let () =
   try

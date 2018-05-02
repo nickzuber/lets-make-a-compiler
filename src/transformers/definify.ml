@@ -5,12 +5,6 @@ exception Incorrect_step of string
 exception Program_error of string
 exception Encountered_undesugared_macro
 
-(* Actually does the unnique naming transformation on a given program. This is done by
- * passing around a mapping of all the variable names we've seen so far, and either:
- *  - throwing an exception if we're trying to reference an undefined variable
- *  - adjusts the name of the variable if it's been seen before
- * We use the `count` variable to append a unique number on each variable name
- * we decide that we want to change. *)
 let rec definify (defines : define list) (expr : expression) : expression =
   match expr with
   | Variable name ->
@@ -64,9 +58,6 @@ let rec definify (defines : define list) (expr : expression) : expression =
   | Begin _
   | When _ -> raise Encountered_undesugared_macro
 
-(* Extract defines of the program and does two things:
- *  - build the internal define table for the assembler at the end
- *  - replace variables referencing define with function references *)
 let transform (prog : program) : program =
   let (defines, expr) = match prog with
     | Program (defines, expr) -> (defines, (definify defines expr))

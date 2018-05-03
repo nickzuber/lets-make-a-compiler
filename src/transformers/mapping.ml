@@ -220,9 +220,7 @@ let get_variable_with_max_saturation (var_to_sat_and_adj : (Select.arg, int Set.
 
 (* Given a set, find the lowest positive integer that is not an element of the set. *)
 let find_lowest_num_not_in_set set : int =
-  let rec loop i =
-    if Set.exists set i then loop (i + 1) else i
-  in
+  let rec loop i = if Set.exists set i then loop (i + 1) else i in
   loop 0
 
 (* Given an interference graph, return a mapping of ints to variables. *)

@@ -58,7 +58,6 @@ let rec select_single_statement (stmt : Flat.statement) : Select.instruction lis
           let ptr_var_name = Printf.sprintf "ty_vector_ptr_var%d" guid in
           Hashtbl.add extra_variables ptr_var_name t;
           [ MOV (GLOBAL "free_ptr", var')
-          (* ; CALL ("_show_freeptr") *)
           ; ADD (INT size_in_bytes, GLOBAL "free_ptr")
           ; MOV (var', free_ptr)
           ; LEAQ (TAG gs, VARIABLE ptr_var_name)

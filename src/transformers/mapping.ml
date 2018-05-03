@@ -4,22 +4,6 @@ open Polyfill
 
 exception Debugging of string
 
-let print_liveness liveness =
-  Hashtbl.iter (fun arg _ ->
-      match arg with
-      | Select.VARIABLE name -> Printf.printf "=>> %s\n" name
-      | _ -> ()) liveness
-
-let print_liveness_mapping liveness_mapping =
-  Hashtbl.iter (fun instr liveness ->
-      Printf.printf "\n\x1b[90m[%s]\x1b[39m: " (Pprint_ast.string_of_instruction instr);
-      Hashtbl.iter (fun arg _ ->
-          match arg with
-          | Select.VARIABLE name -> Printf.printf "\n %s" name
-          | _ -> ()) liveness;
-      print_endline ""
-    ) liveness_mapping
-
 module Bfs = Interference_graph.Bfs
 
 let naive_interference_ts = ref 0.
